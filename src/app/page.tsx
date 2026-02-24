@@ -40,15 +40,14 @@ const staggerContainer = {
 };
 
 const roles = [
-  { name: 'Student', icon: '📚', color: 'purple', href: '/login?role=student' },
-  { name: 'Instructor', icon: '🎓', color: 'amber', href: '/login?role=instructor' },
-  { name: 'Parent', icon: '👨‍👩‍👧‍👦', color: 'emerald', href: '/login?role=parent' },
-  { name: 'Administrator', icon: '⚙️', color: 'orange', href: '/login?role=admin' },
-  { name: 'Student Services', icon: '💙', color: 'blue', href: '/login?role=services' },
-  { name: 'Community', icon: '🤝', color: 'teal', href: '/login?role=community' },
-  { name: 'Public', icon: '🌐', color: 'slate', href: '/public' },
+  { name: 'Student', icon: '📚', gradient: 'from-purple-500 to-purple-600', href: '/login?role=student' },
+  { name: 'Instructor', icon: '🎓', gradient: 'from-amber-500 to-amber-600', href: '/login?role=instructor' },
+  { name: 'Parent', icon: '👨‍👩‍👧‍👦', gradient: 'from-emerald-500 to-emerald-600', href: '/login?role=parent' },
+  { name: 'Administrator', icon: '⚙️', gradient: 'from-orange-500 to-orange-600', href: '/login?role=admin' },
+  { name: 'Services', icon: '💙', gradient: 'from-blue-500 to-blue-600', href: '/login?role=services' },
+  { name: 'Community', icon: '🤝', gradient: 'from-teal-500 to-teal-600', href: '/login?role=community' },
+  { name: 'Public', icon: '🌐', gradient: 'from-slate-500 to-slate-600', href: '/public' },
 ];
-
 const features = [
   {
     icon: BookOpen,
@@ -178,7 +177,7 @@ export default function LandingPage() {
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.3 + i * 0.1 }}
-                    className={`aspect-square rounded-xl bg-gradient-to-br from-${role.color}-500 to-${role.color}-600 flex flex-col items-center justify-center text-white shadow-lg hover:scale-105 transition-transform cursor-pointer`}
+                    className={`aspect-square rounded-xl bg-gradient-to-br ${role.gradient} flex flex-col items-center justify-center text-white shadow-lg hover:scale-105 transition-transform cursor-pointer`}
                   >
                     <span className="text-3xl mb-2">{role.icon}</span>
                     <span className="text-xs font-medium">{role.name}</span>

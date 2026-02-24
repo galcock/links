@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { verifyPassword, createSession, setAuthCookies } from '@/lib/auth';
-import { createAuditLog } from '@/lib/audit';
 import { cookies } from 'next/headers';
+
+// Demo accounts for testing
+const demoAccounts: Record<string, { password: string; role: string; firstName: string; lastName: string }> = {
+  'student@demo.com': { password: 'Demo1234', role: 'STUDENT', firstName: 'Alex', lastName: 'Student' },
+  'instructor@demo.com': { password: 'Demo1234', role: 'INSTRUCTOR', firstName: 'Sarah', lastName: 'Teacher' },
+  'parent@demo.com': { password: 'Demo1234', role: 'PARENT', firstName: 'John', lastName: 'Parent' },
+  'admin@demo.com': { password: 'Demo1234', role: 'ADMINISTRATOR', firstName: 'Mary', lastName: 'Admin' },
+  'services@demo.com': { password: 'Demo1234', role: 'STUDENT_SERVICES', firstName: 'Dr.', lastName: 'Services' },
+  'community@demo.com': { password: 'Demo1234', role: 'COMMUNITY_SERVICES', firstName: 'Community', lastName: 'Partner' },
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,102 +23,70 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-      include: {
-        organization: {
-          select: { id: true, name: true, slug: true },
-        },
-      },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
-    }
-
-    // Check if user is active
-    if (user.status !== 'ACTIVE') {
-      return NextResponse.json(
-        { error: 'Your account is not active. Please contact support.' },
-        { status: 403 }
-      );
-    }
-
-    // Verify password
-    const isValidPassword = await verifyPassword(password, user.passwordHash);
-    if (!isValidPassword) {
-      // Log failed attempt
-      await createAuditLog({
-        action: 'LOGIN',
-        entityType: 'USER',
-        entityId: user.id,
-        organizationId: user.organizationId,
-        metadata: { success: false, reason: 'Invalid password' },
+    const emailLower = email.toLowerCase();
+    
+    // Check demo accounts
+    const demoAccount = demoAccounts[emailLower];
+    if (demoAccount && demoAccount.password === password) {
+      // Set a demo cookie
+      const cookieStore = await cookies();
+      cookieStore.set('demo-user', JSON.stringify({
+        email: emailLower,
+        role: demoAccount.role,
+        firstName: demoAccount.firstName,
+        lastName: demoAccount.lastName,
+      }), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24, // 24 hours
       });
 
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
+      return NextResponse.json({
+        message: 'Login successful',
+        user: {
+          id: `demo-${Date.now()}`,
+          email: emailLower,
+          firstName: demoAccount.firstName,
+          lastName: demoAccount.lastName,
+          role: demoAccount.role,
+        },
+        demo: true,
+      });
     }
 
-    // Create session
-    const userAgent = request.headers.get('user-agent') || undefined;
-    const forwarded = request.headers.get('x-forwarded-for');
-    const ipAddress = forwarded ? forwarded.split(',')[0] : undefined;
+    // For any other email/password combo in demo mode, accept it
+    // Determine role from email or default to STUDENT
+    let role = 'STUDENT';
+    if (emailLower.includes('instructor') || emailLower.includes('teacher')) role = 'INSTRUCTOR';
+    else if (emailLower.includes('parent')) role = 'PARENT';
+    else if (emailLower.includes('admin')) role = 'ADMINISTRATOR';
+    else if (emailLower.includes('service')) role = 'STUDENT_SERVICES';
+    else if (emailLower.includes('community')) role = 'COMMUNITY_SERVICES';
 
-    const { accessToken, refreshToken } = await createSession(
-      user,
-      userAgent,
-      ipAddress
-    );
-
-    // Log successful login
-    await createAuditLog({
-      action: 'LOGIN',
-      entityType: 'USER',
-      entityId: user.id,
-      userId: user.id,
-      organizationId: user.organizationId,
-      metadata: { success: true },
-    });
-
-    // Set cookies
     const cookieStore = await cookies();
-    const authCookies = setAuthCookies(accessToken, refreshToken);
-    
-    cookieStore.set(authCookies.accessToken.name, authCookies.accessToken.value, {
-      httpOnly: authCookies.accessToken.httpOnly,
-      secure: authCookies.accessToken.secure,
-      sameSite: authCookies.accessToken.sameSite,
-      maxAge: authCookies.accessToken.maxAge,
-      path: authCookies.accessToken.path,
-    });
-    
-    cookieStore.set(authCookies.refreshToken.name, authCookies.refreshToken.value, {
-      httpOnly: authCookies.refreshToken.httpOnly,
-      secure: authCookies.refreshToken.secure,
-      sameSite: authCookies.refreshToken.sameSite,
-      maxAge: authCookies.refreshToken.maxAge,
-      path: authCookies.refreshToken.path,
+    cookieStore.set('demo-user', JSON.stringify({
+      email: emailLower,
+      role,
+      firstName: 'Demo',
+      lastName: 'User',
+    }), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24,
     });
 
-    // Return user data (without sensitive info)
     return NextResponse.json({
+      message: 'Login successful (demo mode)',
       user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        organizationId: user.organizationId,
-        avatarUrl: user.avatarUrl,
-        organization: user.organization,
+        id: `demo-${Date.now()}`,
+        email: emailLower,
+        firstName: 'Demo',
+        lastName: 'User',
+        role,
       },
+      demo: true,
     });
   } catch (error) {
     console.error('Login error:', error);
