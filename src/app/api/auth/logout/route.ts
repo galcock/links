@@ -1,42 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifyAccessToken, revokeSession } from '@/lib/auth';
-import { createAuditLog } from '@/lib/audit';
+import { NextRequest } from 'next/server';
+import { getCurrentUser, revokeSession } from '@/lib/auth';
+import { successResponse, errorResponse } from '@/lib/api-response';
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const accessToken = cookieStore.get('access_token')?.value;
+    const user = await getCurrentUser();
 
-    if (accessToken) {
-      const payload = await verifyAccessToken(accessToken);
-      if (payload) {
-        // Revoke all sessions for this user
-        await revokeSession(payload.userId);
-
-        // Log logout
-        await createAuditLog({
-          action: 'LOGOUT',
-          entityType: 'USER',
-          entityId: payload.userId,
-          userId: payload.userId,
-          organizationId: payload.organizationId,
-        });
-      }
+    if (user) {
+      // Revoke all refresh tokens for this user
+      await revokeSession(user.id);
     }
 
-    // Clear cookies
-    cookieStore.delete('access_token');
-    cookieStore.delete('refresh_token');
+    // Create response
+    const response = successResponse({ message: 'Logged out successfully' });
 
-    return NextResponse.json({ message: 'Logged out successfully' });
+    // Clear cookies
+    response.cookies.set('access_token', '', { maxAge: 0 });
+    response.cookies.set('refresh_token', '', { maxAge: 0 });
+
+    return response;
   } catch (error) {
     console.error('Logout error:', error);
-    // Still clear cookies even if there's an error
-    const cookieStore = await cookies();
-    cookieStore.delete('access_token');
-    cookieStore.delete('refresh_token');
-    
-    return NextResponse.json({ message: 'Logged out' });
+    return errorResponse('An error occurred during logout');
   }
 }

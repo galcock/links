@@ -1,98 +1,86 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { prisma } from '@/lib/db';
+import { verifyPassword, createSession, setAuthCookies } from '@/lib/auth';
+import { successResponse, errorResponse, validationError } from '@/lib/api-response';
+import { validateBody } from '@/lib/api-helpers';
 
-// Demo accounts for testing
-const demoAccounts: Record<string, { password: string; role: string; firstName: string; lastName: string }> = {
-  'student@demo.com': { password: 'Demo1234', role: 'STUDENT', firstName: 'Alex', lastName: 'Student' },
-  'instructor@demo.com': { password: 'Demo1234', role: 'INSTRUCTOR', firstName: 'Sarah', lastName: 'Teacher' },
-  'parent@demo.com': { password: 'Demo1234', role: 'PARENT', firstName: 'John', lastName: 'Parent' },
-  'admin@demo.com': { password: 'Demo1234', role: 'ADMINISTRATOR', firstName: 'Mary', lastName: 'Admin' },
-  'services@demo.com': { password: 'Demo1234', role: 'STUDENT_SERVICES', firstName: 'Dr.', lastName: 'Services' },
-  'community@demo.com': { password: 'Demo1234', role: 'COMMUNITY_SERVICES', firstName: 'Community', lastName: 'Partner' },
-};
+const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, password } = body;
+    // Validate request body
+    const validation = await validateBody(request, loginSchema);
+    if (validation.error) {
+      return validation.error;
+    }
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
+    const { email, password } = validation.data;
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+      include: {
+        organization: {
+          select: { id: true, name: true, type: true },
+        },
+      },
+    });
+
+    if (!user) {
+      return errorResponse('Invalid email or password', 'INVALID_CREDENTIALS', 401);
+    }
+
+    // Check if account is active
+    if (user.status !== 'ACTIVE') {
+      return errorResponse(
+        'Account is not active. Please contact support.',
+        'ACCOUNT_INACTIVE',
+        403
       );
     }
 
-    const emailLower = email.toLowerCase();
-    
-    // Check demo accounts
-    const demoAccount = demoAccounts[emailLower];
-    if (demoAccount && demoAccount.password === password) {
-      // Set a demo cookie
-      const cookieStore = await cookies();
-      cookieStore.set('demo-user', JSON.stringify({
-        email: emailLower,
-        role: demoAccount.role,
-        firstName: demoAccount.firstName,
-        lastName: demoAccount.lastName,
-      }), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24, // 24 hours
-      });
-
-      return NextResponse.json({
-        message: 'Login successful',
-        user: {
-          id: `demo-${Date.now()}`,
-          email: emailLower,
-          firstName: demoAccount.firstName,
-          lastName: demoAccount.lastName,
-          role: demoAccount.role,
-        },
-        demo: true,
-      });
+    // Verify password
+    const isValidPassword = await verifyPassword(password, user.passwordHash);
+    if (!isValidPassword) {
+      return errorResponse('Invalid email or password', 'INVALID_CREDENTIALS', 401);
     }
 
-    // For any other email/password combo in demo mode, accept it
-    // Determine role from email or default to STUDENT
-    let role = 'STUDENT';
-    if (emailLower.includes('instructor') || emailLower.includes('teacher')) role = 'INSTRUCTOR';
-    else if (emailLower.includes('parent')) role = 'PARENT';
-    else if (emailLower.includes('admin')) role = 'ADMINISTRATOR';
-    else if (emailLower.includes('service')) role = 'STUDENT_SERVICES';
-    else if (emailLower.includes('community')) role = 'COMMUNITY_SERVICES';
+    // Get client info
+    const userAgent = request.headers.get('user-agent') || undefined;
+    const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
 
-    const cookieStore = await cookies();
-    cookieStore.set('demo-user', JSON.stringify({
-      email: emailLower,
-      role,
-      firstName: 'Demo',
-      lastName: 'User',
-    }), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24,
-    });
+    // Create session and tokens
+    const { accessToken, refreshToken } = await createSession(user, userAgent, ipAddress);
 
-    return NextResponse.json({
-      message: 'Login successful (demo mode)',
+    // Prepare cookies
+    const cookies = setAuthCookies(accessToken, refreshToken);
+
+    // Create response
+    const response = successResponse({
       user: {
-        id: `demo-${Date.now()}`,
-        email: emailLower,
-        firstName: 'Demo',
-        lastName: 'User',
-        role,
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+        organization: user.organization,
       },
-      demo: true,
+      accessToken,
+      refreshToken,
     });
+
+    // Set cookies
+    response.cookies.set(cookies.accessToken);
+    response.cookies.set(cookies.refreshToken);
+
+    return response;
   } catch (error) {
     console.error('Login error:', error);
-    return NextResponse.json(
-      { error: 'An error occurred during login' },
-      { status: 500 }
-    );
+    return errorResponse('An error occurred during login');
   }
 }

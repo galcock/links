@@ -1,57 +1,43 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { NextRequest } from 'next/server';
 import { refreshSession, setAuthCookies } from '@/lib/auth';
+import { successResponse, errorResponse, unauthorizedError } from '@/lib/api-response';
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const refreshToken = cookieStore.get('refresh_token')?.value;
+    // Get refresh token from cookie or body
+    const refreshToken = 
+      request.cookies.get('refresh_token')?.value ||
+      (await request.json().catch(() => ({})))?.refreshToken;
 
     if (!refreshToken) {
-      return NextResponse.json(
-        { error: 'No refresh token provided' },
-        { status: 401 }
-      );
+      return unauthorizedError('Refresh token required');
     }
 
-    const tokens = await refreshSession(refreshToken);
+    // Refresh the session
+    const result = await refreshSession(refreshToken);
 
-    if (!tokens) {
-      // Clear invalid tokens
-      cookieStore.delete('access_token');
-      cookieStore.delete('refresh_token');
-      
-      return NextResponse.json(
-        { error: 'Invalid or expired refresh token' },
-        { status: 401 }
-      );
+    if (!result) {
+      return unauthorizedError('Invalid or expired refresh token');
     }
 
-    // Set new cookies
-    const authCookies = setAuthCookies(tokens.accessToken, tokens.refreshToken);
-    
-    cookieStore.set(authCookies.accessToken.name, authCookies.accessToken.value, {
-      httpOnly: authCookies.accessToken.httpOnly,
-      secure: authCookies.accessToken.secure,
-      sameSite: authCookies.accessToken.sameSite,
-      maxAge: authCookies.accessToken.maxAge,
-      path: authCookies.accessToken.path,
-    });
-    
-    cookieStore.set(authCookies.refreshToken.name, authCookies.refreshToken.value, {
-      httpOnly: authCookies.refreshToken.httpOnly,
-      secure: authCookies.refreshToken.secure,
-      sameSite: authCookies.refreshToken.sameSite,
-      maxAge: authCookies.refreshToken.maxAge,
-      path: authCookies.refreshToken.path,
+    const { accessToken, refreshToken: newRefreshToken } = result;
+
+    // Prepare cookies
+    const cookies = setAuthCookies(accessToken, newRefreshToken);
+
+    // Create response
+    const response = successResponse({
+      accessToken,
+      refreshToken: newRefreshToken,
     });
 
-    return NextResponse.json({ message: 'Token refreshed successfully' });
+    // Set cookies
+    response.cookies.set(cookies.accessToken);
+    response.cookies.set(cookies.refreshToken);
+
+    return response;
   } catch (error) {
     console.error('Token refresh error:', error);
-    return NextResponse.json(
-      { error: 'An error occurred during token refresh' },
-      { status: 500 }
-    );
+    return errorResponse('An error occurred during token refresh');
   }
 }

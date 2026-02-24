@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import '@/styles/globals.css';
 import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/lib/auth-context';
+import { Providers } from './providers';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -93,9 +94,11 @@ export default function RootLayout({
           'min-h-screen bg-background font-sans antialiased'
         )}
       >
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <Providers>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </Providers>
       </body>
     </html>
   );
