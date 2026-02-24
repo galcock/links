@@ -6,53 +6,69 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Avatar } from '@/components/ui/avatar';
-import { MiniCalendar } from '@/components/features/calendar';
 import {
   Users,
-  GraduationCap,
-  DollarSign,
-  BarChart3,
-  Building2,
+  BookOpen,
+  Calendar,
   TrendingUp,
-  AlertTriangle,
-  CheckCircle,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
   ChevronRight,
-  FileText,
-  Settings,
-  Shield,
-  Activity,
-  PieChart,
+  Loader2,
 } from 'lucide-react';
-
-const stats = [
-  { label: 'Total Students', value: '2,847', icon: Users, change: '+127', trend: 'up' },
-  { label: 'Staff Members', value: '186', icon: GraduationCap, change: '+8', trend: 'up' },
-  { label: 'Budget Used', value: '67%', icon: DollarSign, change: null, trend: null },
-  { label: 'Avg. Attendance', value: '94.2%', icon: Activity, change: '+1.3%', trend: 'up' },
-];
-
-const alerts = [
-  { type: 'warning', title: 'Budget Review Due', description: 'Q2 budget review is due in 3 days', time: 'Due Mar 15' },
-  { type: 'info', title: 'New Staff Onboarding', description: '3 new teachers starting next week', time: 'Mar 18' },
-  { type: 'success', title: 'Compliance Report', description: 'Annual compliance report submitted', time: 'Completed' },
-];
-
-const departments = [
-  { name: 'Mathematics', staff: 18, students: 412, performance: 87 },
-  { name: 'Sciences', staff: 22, students: 485, performance: 91 },
-  { name: 'English', staff: 16, students: 398, performance: 84 },
-  { name: 'Social Studies', staff: 14, students: 356, performance: 82 },
-];
-
-const recentReports = [
-  { name: 'Enrollment Statistics', date: 'Today', status: 'ready' },
-  { name: 'Financial Summary Q1', date: 'Yesterday', status: 'ready' },
-  { name: 'Staff Performance Review', date: 'Mar 10', status: 'pending' },
-  { name: 'Facility Assessment', date: 'Mar 8', status: 'ready' },
-];
+import { useUsers } from '@/lib/hooks/use-users';
+import { useCourses } from '@/lib/hooks/use-courses';
+import { useStudents } from '@/lib/hooks/use-students';
+import { useCalendarEvents } from '@/lib/hooks/use-calendar';
+import { useAnnouncements } from '@/lib/hooks/use-announcements';
 
 export default function AdminDashboard() {
+  const { data: usersData, isLoading: usersLoading } = useUsers({ limit: 10, status: 'ACTIVE' });
+  const { data: coursesData } = useCourses({ limit: 5, status: 'ACTIVE' });
+  const { data: studentsData } = useStudents({ limit: 100 });
+  const { data: eventsData } = useCalendarEvents({ limit: 5 });
+  const { data: announcementsData } = useAnnouncements({ limit: 5, priority: 'HIGH' });
+
+  const stats = [
+    {
+      label: 'Total Users',
+      value: usersData?.meta.total || 0,
+      icon: Users,
+      color: 'text-blue-500',
+      change: '+12 this month',
+    },
+    {
+      label: 'Active Students',
+      value: studentsData?.meta.total || 0,
+      icon: Users,
+      color: 'text-green-500',
+      change: `${coursesData?.meta.total || 0} courses`,
+    },
+    {
+      label: 'Total Courses',
+      value: coursesData?.meta.total || 0,
+      icon: BookOpen,
+      color: 'text-purple-500',
+      change: 'Current term',
+    },
+    {
+      label: 'Events Today',
+      value: eventsData?.meta.total || 0,
+      icon: Calendar,
+      color: 'text-amber-500',
+      change: 'This week',
+    },
+  ];
+
+  if (usersLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-admin-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
@@ -63,20 +79,16 @@ export default function AdminDashboard() {
       >
         <div>
           <h1 className="text-3xl font-bold">
-            Administration Dashboard ⚙️
+            System <span className="text-admin-600">Overview</span>
           </h1>
           <p className="text-muted-foreground mt-1">
-            Lincoln High School • Academic Year 2025-26
+            Monitor and manage your education platform
           </p>
         </div>
         <div className="flex gap-3">
           <Button variant="admin">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Generate Report
-          </Button>
-          <Button variant="outline">
-            <Settings className="h-4 w-4 mr-2" />
-            System Settings
+            <TrendingUp className="h-4 w-4 mr-2" />
+            View Reports
           </Button>
         </div>
       </motion.div>
@@ -88,23 +100,16 @@ export default function AdminDashboard() {
         transition={{ delay: 0.1 }}
         className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >
-        {stats.map((stat) => (
+        {stats.map((stat, i) => (
           <Card key={stat.label} variant="admin" hover="lift">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-bold mt-1">{stat.value}</p>
-                    {stat.change && (
-                      <span className={`text-xs flex items-center ${stat.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
-                        <TrendingUp className="h-3 w-3 mr-0.5" />
-                        {stat.change}
-                      </span>
-                    )}
-                  </div>
+                  <p className="text-2xl font-bold mt-1">{stat.value}</p>
+                  <p className="text-xs text-admin-600 mt-1">{stat.change}</p>
                 </div>
-                <stat.icon className="h-8 w-8 text-admin-500" />
+                <stat.icon className={`h-8 w-8 ${stat.color}`} />
               </div>
             </CardContent>
           </Card>
@@ -114,7 +119,7 @@ export default function AdminDashboard() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Alerts */}
+          {/* Recent Activity */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -124,43 +129,40 @@ export default function AdminDashboard() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-admin-500" />
-                    Alerts & Notifications
+                    <Clock className="h-5 w-5 text-admin-600" />
+                    Recent Users
                   </CardTitle>
-                  <Badge variant="admin">{alerts.length}</Badge>
+                  <Button variant="ghost" size="sm">
+                    View All
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {alerts.map((alert, i) => (
+                {usersData?.data.slice(0, 5).map((user) => (
                   <div
-                    key={i}
-                    className={`flex items-start gap-4 p-4 rounded-xl ${
-                      alert.type === 'warning' ? 'bg-amber-50 dark:bg-amber-950/30 border border-amber-200' :
-                      alert.type === 'success' ? 'bg-green-50 dark:bg-green-950/30 border border-green-200' :
-                      'bg-blue-50 dark:bg-blue-950/30 border border-blue-200'
-                    }`}
+                    key={user.id}
+                    className="flex items-center gap-4 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
                   >
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                      alert.type === 'warning' ? 'bg-amber-100 text-amber-600' :
-                      alert.type === 'success' ? 'bg-green-100 text-green-600' :
-                      'bg-blue-100 text-blue-600'
-                    }`}>
-                      {alert.type === 'warning' && <AlertTriangle className="h-5 w-5" />}
-                      {alert.type === 'success' && <CheckCircle className="h-5 w-5" />}
-                      {alert.type === 'info' && <Activity className="h-5 w-5" />}
+                    <div className="h-10 w-10 rounded-full bg-admin-100 dark:bg-admin-900/30 flex items-center justify-center font-semibold text-admin-600">
+                      {user.firstName.charAt(0)}{user.lastName.charAt(0)}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium">{alert.title}</p>
-                      <p className="text-sm text-muted-foreground">{alert.description}</p>
+                      <p className="font-medium">
+                        {user.firstName} {user.lastName}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
                     </div>
-                    <Badge variant="secondary" size="sm">{alert.time}</Badge>
+                    <Badge variant={user.status === 'ACTIVE' ? 'success' : 'secondary'}>
+                      {user.role}
+                    </Badge>
                   </div>
                 ))}
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* Department Overview */}
+          {/* Courses */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -170,42 +172,36 @@ export default function AdminDashboard() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-admin-500" />
-                    Department Overview
+                    <BookOpen className="h-5 w-5 text-admin-600" />
+                    Active Courses
                   </CardTitle>
                   <Button variant="ghost" size="sm">
-                    Manage
+                    View All
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">Department</th>
-                        <th className="text-center py-3 px-2 text-sm font-medium text-muted-foreground">Staff</th>
-                        <th className="text-center py-3 px-2 text-sm font-medium text-muted-foreground">Students</th>
-                        <th className="text-left py-3 px-2 text-sm font-medium text-muted-foreground">Performance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {departments.map((dept, i) => (
-                        <tr key={i} className="border-b last:border-0 hover:bg-muted/50">
-                          <td className="py-3 px-2 font-medium">{dept.name}</td>
-                          <td className="py-3 px-2 text-center">{dept.staff}</td>
-                          <td className="py-3 px-2 text-center">{dept.students}</td>
-                          <td className="py-3 px-2">
-                            <div className="flex items-center gap-2">
-                              <Progress value={dept.performance} className="h-2 flex-1" indicatorClassName="bg-admin-500" />
-                              <span className="text-sm font-medium w-10">{dept.performance}%</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="space-y-4">
+                  {coursesData?.data.slice(0, 4).map((course) => (
+                    <div
+                      key={course.id}
+                      className="flex items-center justify-between p-3 rounded-xl border hover:shadow-md transition-all"
+                    >
+                      <div>
+                        <h4 className="font-semibold">{course.name}</h4>
+                        <p className="text-sm text-muted-foreground">{course.code}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium">
+                          {course._count?.enrollments || 0} students
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {course._count?.assignments || 0} assignments
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -214,15 +210,51 @@ export default function AdminDashboard() {
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* System Status */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <MiniCalendar accentColor="admin" />
+            <Card variant="admin">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  System Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>Server Health</span>
+                    <span className="font-medium text-green-600">100%</span>
+                  </div>
+                  <Progress value={100} className="h-2" indicatorClassName="bg-green-500" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>Database</span>
+                    <span className="font-medium text-green-600">98%</span>
+                  </div>
+                  <Progress value={98} className="h-2" indicatorClassName="bg-green-500" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>Storage</span>
+                    <span className="font-medium text-blue-600">67%</span>
+                  </div>
+                  <Progress value={67} className="h-2" indicatorClassName="bg-blue-500" />
+                </div>
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    All systems operational
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
 
-          {/* Reports */}
+          {/* Priority Announcements */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -231,50 +263,80 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-admin-500" />
-                  Recent Reports
+                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                  Priority Items
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                {recentReports.map((report, i) => (
-                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{report.name}</p>
-                      <p className="text-xs text-muted-foreground">{report.date}</p>
+              <CardContent className="space-y-3">
+                {announcementsData?.data.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No priority items
+                  </p>
+                ) : (
+                  announcementsData?.data.map((announcement) => (
+                    <div
+                      key={announcement.id}
+                      className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
+                    >
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{announcement.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            {announcement.content}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <Badge variant={report.status === 'ready' ? 'success' : 'warning'} size="sm">
-                      {report.status}
-                    </Badge>
-                  </div>
-                ))}
+                  ))
+                )}
+                <Button variant="ghost" size="sm" className="w-full">
+                  View All Announcements
+                </Button>
               </CardContent>
             </Card>
           </motion.div>
 
-          {/* Quick Actions */}
+          {/* Upcoming Events */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            <Card variant="admin">
-              <CardContent className="p-4 space-y-2">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Users className="h-4 w-4 mr-2" />
-                  User Management
-                </Button>
-                <Button variant="ghost" className="w-full justify-start">
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Budget Dashboard
-                </Button>
-                <Button variant="ghost" className="w-full justify-start">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Compliance Center
-                </Button>
-                <Button variant="ghost" className="w-full justify-start">
-                  <PieChart className="h-4 w-4 mr-2" />
-                  Analytics
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-admin-600" />
+                  Upcoming Events
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {eventsData?.data.slice(0, 3).map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex flex-col items-center justify-center bg-admin-100 dark:bg-admin-900/30 rounded-lg p-2 min-w-[50px]">
+                      <span className="text-xs font-medium text-admin-600">
+                        {new Date(event.startTime).toLocaleDateString('en-US', { month: 'short' })}
+                      </span>
+                      <span className="text-lg font-bold">
+                        {new Date(event.startTime).getDate()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{event.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(event.startTime).toLocaleTimeString('en-US', { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                <Button variant="ghost" size="sm" className="w-full">
+                  View Calendar
                 </Button>
               </CardContent>
             </Card>
