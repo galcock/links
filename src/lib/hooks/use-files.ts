@@ -188,11 +188,11 @@ export function useUploadFile() {
   });
 }
 
-export function useDeleteFile(id: string) {
+export function useDeleteFile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => api.delete(`/files/${id}`),
+    mutationFn: (id: string) => api.delete(`/files/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['files'] });
     },

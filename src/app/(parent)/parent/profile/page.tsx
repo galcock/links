@@ -20,7 +20,6 @@ export default function ParentProfile() {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
   });
 
   React.useEffect(() => {
@@ -29,7 +28,6 @@ export default function ParentProfile() {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
-        phone: user.phone || '',
       });
     }
   }, [user]);
@@ -75,7 +73,6 @@ export default function ParentProfile() {
           </div>
           <div className="space-y-2">
             <Label>Phone</Label>
-            <Input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
           </div>
           <Button variant="parent" onClick={handleSave} disabled={updateMutation.isPending}>
             <Save className="h-4 w-4 mr-2" />

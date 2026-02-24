@@ -50,7 +50,7 @@ export default function AdminOffice() {
         {files.map((file) => (
           <Card key={file.id} hover="lift">
             <CardContent className="p-4">
-              <p className="font-medium text-sm truncate">{file.filename}</p>
+              <p className="font-medium text-sm truncate">{file.name}</p>
               <p className="text-xs text-muted-foreground">{Math.round((file.size || 0) / 1024)} KB</p>
             </CardContent>
           </Card>

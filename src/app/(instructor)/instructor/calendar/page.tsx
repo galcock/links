@@ -93,7 +93,7 @@ export default function InstructorCalendar() {
             events={calendarEvents}
             accentColor="instructor"
             onEventClick={(event) => {
-              toast.info(event.title, event.description || 'No description');
+              toast.info(event.title, event.location || 'No details');
             }}
           />
         </motion.div>

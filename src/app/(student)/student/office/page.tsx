@@ -46,7 +46,7 @@ export default function StudentMyOffice() {
   });
 
   const uploadMutation = useUploadFile();
-  const deleteMutation = useDeleteFile('');
+  const deleteMutation = useDeleteFile();
   const toast = useToast();
 
   const isLoading = foldersLoading || filesLoading;
@@ -269,11 +269,7 @@ export default function StudentMyOffice() {
                       <p className={viewMode === 'grid' ? 'font-medium' : 'font-medium text-sm'}>
                         {folder.name}
                       </p>
-                      {folder.description && (
-                        <p className="text-xs text-muted-foreground">
-                          {folder.description}
-                        </p>
-                      )}
+                      {/* Folder description removed - not in type */}
                     </div>
                   </div>
                 ))}
@@ -298,7 +294,7 @@ export default function StudentMyOffice() {
                         ? 'font-medium text-sm truncate' 
                         : 'font-medium text-sm'
                       }>
-                        {file.filename}
+                        {file.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatBytes(file.size || 0)}
@@ -317,7 +313,7 @@ export default function StudentMyOffice() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteFile(file.id, file.filename)}
+                        onClick={() => handleDeleteFile(file.id, file.name)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

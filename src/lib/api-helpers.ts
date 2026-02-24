@@ -59,6 +59,6 @@ export function buildWhereClause(searchParams: ReturnType<typeof getSearchParams
 }
 
 export function buildOrderBy(sort?: string, order: 'asc' | 'desc' = 'asc') {
-  if (!sort) return { createdAt: 'desc' };
-  return { [sort]: order };
+  if (!sort) return { createdAt: 'desc' as const };
+  return { [sort]: order } as any;
 }

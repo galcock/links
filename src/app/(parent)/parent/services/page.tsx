@@ -50,27 +50,21 @@ export default function ParentServices() {
             <Card key={service.id} hover="lift">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>{service.serviceType}</CardTitle>
+                  <CardTitle>{service.type}</CardTitle>
                   <Badge variant="parent">{service.status}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  {service.description || 'No description'}
+                  {service.notes || 'No description'}
                 </p>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
                     <span>
-                      {service.student.user.firstName} {service.student.user.lastName}
+                      {service.student?.user?.firstName} {service.student?.user?.lastName}
                     </span>
                   </div>
-                  {service.sessions && service.sessions.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>{service.sessions.length} sessions completed</span>
-                    </div>
-                  )}
                 </div>
                 <Button variant="outline" className="w-full">
                   View Details

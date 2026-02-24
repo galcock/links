@@ -9,7 +9,6 @@ import { useFiles } from '@/lib/hooks/use-files';
 export default function StudentGalleries() {
   const { data: filesData, isLoading } = useFiles({ 
     limit: 50,
-    mimeType: 'image/',
   });
   const images = filesData?.data || [];
 
@@ -34,10 +33,10 @@ export default function StudentGalleries() {
           images.map((image) => (
             <Card key={image.id} hover="lift">
               <CardContent className="p-2">
-                {image.url && (
+                {image.storageUrl && (
                   <img 
-                    src={image.url} 
-                    alt={image.filename} 
+                    src={image.storageUrl} 
+                    alt={image.name} 
                     className="w-full aspect-square object-cover rounded-lg"
                   />
                 )}

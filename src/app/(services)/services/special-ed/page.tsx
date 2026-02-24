@@ -10,7 +10,7 @@ import { useServices } from '@/lib/hooks/use-services';
 export default function SpecialEducation() {
   const { data: servicesData, isLoading } = useServices({ 
     limit: 100,
-    serviceType: 'SPECIAL_EDUCATION',
+    type: 'SPECIAL_EDUCATION',
   });
   const services = servicesData?.data || [];
 
@@ -36,13 +36,13 @@ export default function SpecialEducation() {
             <Card key={service.id}>
               <CardHeader>
                 <CardTitle>
-                  {service.student.user.firstName} {service.student.user.lastName}
+                  {service.student?.user?.firstName} {service.student?.user?.lastName}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <Badge>{service.status}</Badge>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {service.description}
+                  {service.notes}
                 </p>
               </CardContent>
             </Card>

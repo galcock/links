@@ -30,7 +30,7 @@ export default function AdminSpaces() {
             <CardContent>
               <Badge>{workspace.type}</Badge>
               <p className="text-sm text-muted-foreground mt-2">
-                {workspace.members?.length || 0} members
+                {workspace._count?.members || 0} members
               </p>
             </CardContent>
           </Card>

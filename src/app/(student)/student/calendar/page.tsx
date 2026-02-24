@@ -131,7 +131,7 @@ export default function StudentCalendar() {
             events={calendarEvents}
             accentColor="student"
             onEventClick={(event) => {
-              toast.info(event.title, event.description || 'No description');
+              toast.info(event.title, event.location || 'No details');
             }}
           />
         </motion.div>

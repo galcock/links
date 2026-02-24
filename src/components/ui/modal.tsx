@@ -146,6 +146,9 @@ const AnimatedModal = ({ open, onOpenChange, children }: AnimatedModalProps) => 
   );
 };
 
+// Modal alias for backwards compatibility
+const Modal = AnimatedModal;
+
 export {
   Dialog,
   DialogPortal,
@@ -158,4 +161,5 @@ export {
   DialogTitle,
   DialogDescription,
   AnimatedModal,
+  Modal,
 };

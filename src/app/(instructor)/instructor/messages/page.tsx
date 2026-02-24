@@ -83,8 +83,6 @@ export default function InstructorMessages() {
         conversations={conversations}
         messages={messages}
         currentUserId={user?.id || ''}
-        activeConversationId={activeConversationId}
-        onConversationSelect={setActiveConversationId}
         onSendMessage={handleSendMessage}
         accentColor="instructor"
       />

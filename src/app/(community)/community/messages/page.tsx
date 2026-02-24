@@ -29,6 +29,7 @@ export default function CommunityMessages() {
       lastMessage: conv.messages?.[0]?.content || '',
       isGroup: conv.type === 'GROUP',
       participants: conv.participants.length,
+      unreadCount: 0,
     }));
   }, [conversationsData]);
 
@@ -53,8 +54,6 @@ export default function CommunityMessages() {
         conversations={conversations}
         messages={messages}
         currentUserId={user?.id || ''}
-        activeConversationId={activeConversationId}
-        onConversationSelect={setActiveConversationId}
         onSendMessage={async (content, conversationId) => {
           try {
             await sendMessageMutation.mutateAsync({ conversationId, content, type: 'TEXT' });

@@ -52,7 +52,7 @@ export default function ParentCalendar() {
       <Calendar
         events={calendarEvents}
         accentColor="parent"
-        onEventClick={(event) => toast.info(event.title, event.description || '')}
+        onEventClick={(event) => toast.info(event.title, event.location || '')}
       />
     </div>
   );

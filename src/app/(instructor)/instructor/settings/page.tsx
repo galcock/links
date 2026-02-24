@@ -20,7 +20,6 @@ export default function InstructorSettings() {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
   });
 
   React.useEffect(() => {
@@ -29,7 +28,6 @@ export default function InstructorSettings() {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
-        phone: user.phone || '',
       });
     }
   }, [user]);
@@ -109,15 +107,6 @@ export default function InstructorSettings() {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               />
             </div>
             <div className="flex justify-end">

@@ -93,7 +93,7 @@ export default function InstructorCurriculum() {
               <div>
                 <p className="text-sm text-muted-foreground">Total Units</p>
                 <p className="text-2xl font-bold">
-                  {plans.reduce((sum, p) => sum + (p.units?.length || 0), 0)}
+                  {plans.reduce((sum, p) => sum + (p._count?.units || 0), 0)}
                 </p>
               </div>
               <FileText className="h-8 w-8 text-blue-500" />
@@ -157,14 +157,14 @@ export default function InstructorCurriculum() {
                   >
                     <h4 className="font-semibold">{plan.name}</h4>
                     <p className="text-sm text-muted-foreground">
-                      {plan.course?.name || 'No course'}
+                      {plan.subject || 'No subject'}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <Badge variant="secondary" size="sm">
-                        {plan.units?.length || 0} units
+                        {plan._count?.units || 0} units
                       </Badge>
                       <Badge variant="secondary" size="sm">
-                        {plan.gradingPeriod}
+                        Grade {plan.gradeLevel || 'N/A'}
                       </Badge>
                     </div>
                   </div>
@@ -191,13 +191,13 @@ export default function InstructorCurriculum() {
                         </p>
                         <div className="flex gap-2 mt-3">
                           <Badge variant="instructor">
-                            {selectedPlan.course?.name || 'No course'}
+                            {selectedPlan.subject || 'No subject'}
                           </Badge>
                           <Badge variant="secondary">
-                            {selectedPlan.academicYear}
+                            {selectedPlan.scope}
                           </Badge>
                           <Badge variant="secondary">
-                            {selectedPlan.gradingPeriod}
+                            {'Grade ' + (selectedPlan.gradeLevel || 'N/A')}
                           </Badge>
                         </div>
                       </div>
@@ -252,11 +252,11 @@ export default function InstructorCurriculum() {
                             </Button>
                           </div>
                           
-                          {unit.learningObjectives && unit.learningObjectives.length > 0 && (
+                          {unit.objectives && unit.objectives.length > 0 && (
                             <div className="mt-3">
                               <p className="text-sm font-medium mb-2">Learning Objectives:</p>
                               <ul className="text-sm text-muted-foreground space-y-1">
-                                {unit.learningObjectives.slice(0, 3).map((obj, i) => (
+                                {unit.objectives.slice(0, 3).map((obj, i) => (
                                   <li key={i} className="flex items-start gap-2">
                                     <span className="text-instructor-600">•</span>
                                     {obj}
@@ -269,9 +269,9 @@ export default function InstructorCurriculum() {
                           <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {unit.estimatedHours || 0} hours
+                              {unit.estimatedWeeks || 0} weeks
                             </span>
-                            <span>Order: {unit.orderIndex}</span>
+                            <span>Order: {unit.position}</span>
                           </div>
                         </div>
                       ))

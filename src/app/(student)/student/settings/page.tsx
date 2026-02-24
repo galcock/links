@@ -33,7 +33,6 @@ export default function StudentSettings() {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
   });
 
   const [notifications, setNotifications] = React.useState({
@@ -51,7 +50,6 @@ export default function StudentSettings() {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
-        phone: user.phone || '',
       });
     }
   }, [user]);
@@ -140,12 +138,8 @@ export default function StudentSettings() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
               <Input
-                id="phone"
                 type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               />
             </div>
             <div className="flex justify-end">

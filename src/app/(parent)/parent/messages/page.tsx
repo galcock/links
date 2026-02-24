@@ -70,8 +70,6 @@ export default function ParentMessages() {
         conversations={conversations}
         messages={messages}
         currentUserId={user?.id || ''}
-        activeConversationId={activeConversationId}
-        onConversationSelect={setActiveConversationId}
         onSendMessage={handleSendMessage}
         accentColor="parent"
       />

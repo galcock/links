@@ -15,9 +15,6 @@ export default function InstructorMedia() {
 
   const { data: filesData, isLoading } = useFiles({
     search: searchQuery || undefined,
-    mimeType: filter === 'image' ? 'image/' : 
-              filter === 'video' ? 'video/' : 
-              filter === 'audio' ? 'audio/' : undefined,
     limit: 100,
   });
 
@@ -151,8 +148,8 @@ export default function InstructorMedia() {
                       className="p-4 rounded-lg border hover:shadow-md transition-all group"
                     >
                       <div className="aspect-square bg-muted rounded-lg mb-2 flex items-center justify-center">
-                        {isImage && file.url ? (
-                          <img src={file.url} alt={file.filename} className="w-full h-full object-cover rounded-lg" />
+                        {isImage && file.storageUrl ? (
+                          <img src={file.storageUrl} alt={file.name} className="w-full h-full object-cover rounded-lg" />
                         ) : isVideo ? (
                           <Video className="h-12 w-12 text-purple-500" />
                         ) : isAudio ? (
@@ -161,7 +158,7 @@ export default function InstructorMedia() {
                           <Image className="h-12 w-12 text-blue-500" />
                         )}
                       </div>
-                      <p className="font-medium text-sm truncate">{file.filename}</p>
+                      <p className="font-medium text-sm truncate">{file.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {Math.round((file.size || 0) / 1024)} KB
                       </p>

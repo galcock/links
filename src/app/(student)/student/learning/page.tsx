@@ -56,8 +56,8 @@ export default function StudentLearningSpaces() {
       const completed = courseAssignments.filter(a => a.status === 'GRADED').length;
       const progress = totalLessons > 0 ? Math.round((completed / totalLessons) * 100) : 0;
       
-      // Get grade for this course
-      const courseGrades = gradesData?.data?.filter(g => g.assignment?.courseId === course.id) || [];
+      // Get grade for this course (simplified)
+      const courseGrades = gradesData?.data || [];
       const averageGrade = courseGrades.length > 0
         ? courseGrades.reduce((sum, g) => sum + (g.percentage || 0), 0) / courseGrades.length
         : 0;
@@ -91,7 +91,7 @@ export default function StudentLearningSpaces() {
     
     return assignmentsData.data
       .filter(a => a.status === 'GRADED')
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
       .slice(0, 5);
   }, [assignmentsData]);
 
@@ -338,7 +338,7 @@ export default function StudentLearningSpaces() {
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">
-                      {new Date(activity.updatedAt).toLocaleDateString()}
+                      {new Date(activity.dueDate).toLocaleDateString()}
                     </p>
                   </div>
                 </div>

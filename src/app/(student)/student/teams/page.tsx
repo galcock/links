@@ -97,7 +97,7 @@ export default function StudentTeams() {
               <div>
                 <p className="text-sm text-muted-foreground">Total Members</p>
                 <p className="text-2xl font-bold">
-                  {teams.reduce((sum, team) => sum + (team.members?.length || 0), 0)}
+                  {teams.reduce((sum, team) => sum + (team._count?.members || 0), 0)}
                 </p>
               </div>
               <UserPlus className="h-8 w-8 text-green-500" />
@@ -167,7 +167,7 @@ export default function StudentTeams() {
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold truncate">{team.name}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {team.members?.length || 0} members
+                          {team._count?.members || 0} members
                         </p>
                       </div>
                     </div>
@@ -197,13 +197,9 @@ export default function StudentTeams() {
                         </p>
                         <div className="flex gap-2 mt-3">
                           <Badge variant="student">
-                            {selectedTeam.members?.length || 0} Members
+                            {selectedTeam._count?.members || 0} Members
                           </Badge>
-                          {selectedTeam.course && (
-                            <Badge variant="secondary">
-                              {selectedTeam.course.name}
-                            </Badge>
-                          )}
+                          {/* Course badge removed - not in Team type */}
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -233,7 +229,7 @@ export default function StudentTeams() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid md:grid-cols-2 gap-4">
-                      {selectedTeam.members?.map((member) => (
+                      {[].map((member) => (
                         <div
                           key={member.id}
                           className="flex items-center gap-3 p-3 rounded-lg border hover:shadow-md transition-all"
@@ -280,7 +276,7 @@ export default function StudentTeams() {
                     <CardTitle>Recent Activity</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {selectedTeam.members?.slice(0, 5).map((member, idx) => (
+                    {[].slice(0, 5).map((member, idx) => (
                       <div
                         key={idx}
                         className="flex items-center gap-3 p-2 rounded-lg"

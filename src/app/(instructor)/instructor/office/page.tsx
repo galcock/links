@@ -165,7 +165,7 @@ export default function InstructorOffice() {
                   >
                     <File className={viewMode === 'grid' ? 'h-12 w-12 mx-auto mb-2 text-blue-500' : 'h-5 w-5 text-blue-500'} />
                     <div className={viewMode === 'grid' ? 'text-center' : 'flex-1'}>
-                      <p className="font-medium text-sm truncate">{file.filename}</p>
+                      <p className="font-medium text-sm truncate">{file.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {Math.round((file.size || 0) / 1024)} KB
                       </p>

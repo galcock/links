@@ -25,12 +25,12 @@ export default function AdminServices() {
         {services.map((service) => (
           <Card key={service.id}>
             <CardHeader>
-              <CardTitle>{service.serviceType}</CardTitle>
+              <CardTitle>{service.type}</CardTitle>
             </CardHeader>
             <CardContent>
               <Badge>{service.status}</Badge>
               <p className="text-sm text-muted-foreground mt-2">
-                {service.student.user.firstName} {service.student.user.lastName}
+                {service.student?.user?.firstName} {service.student?.user?.lastName}
               </p>
             </CardContent>
           </Card>

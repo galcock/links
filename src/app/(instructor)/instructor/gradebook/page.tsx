@@ -385,9 +385,8 @@ export default function InstructorGradebookPage() {
       {/* Edit Grade Modal */}
       {editingGrade && (
         <Modal
-          isOpen={true}
-          onClose={() => setEditingGrade(null)}
-          title="Edit Grade"
+          open={true}
+          onOpenChange={(open) => !open && setEditingGrade(null)}
         >
           <div className="space-y-4">
             <div>

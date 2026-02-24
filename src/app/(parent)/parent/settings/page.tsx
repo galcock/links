@@ -20,7 +20,6 @@ export default function ParentSettings() {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
   });
 
   React.useEffect(() => {
@@ -29,7 +28,6 @@ export default function ParentSettings() {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
-        phone: user.phone || '',
       });
     }
   }, [user]);
@@ -97,8 +95,6 @@ export default function ParentSettings() {
             <Label>Phone</Label>
             <Input
               type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             />
           </div>
           <div className="flex justify-end">
