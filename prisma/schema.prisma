@@ -1,0 +1,1262 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ORGANIZATIONS ====================
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  type        OrganizationType
+  logoUrl     String?
+  website     String?
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  country     String   @default("US")
+  phone       String?
+  email       String?
+  settings    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  courses     Course[]
+  teams       Team[]
+  folders     Folder[]
+  calendars   Calendar[]
+  workspaces  Workspace[]
+  announcements Announcement[]
+  auditLogs   AuditLog[]
+
+  @@index([slug])
+}
+
+enum OrganizationType {
+  SCHOOL
+  DISTRICT
+  UNIVERSITY
+  TRAINING_CENTER
+  CORPORATION
+}
+
+// ==================== USERS & AUTHENTICATION ====================
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  passwordHash    String
+  firstName       String
+  lastName        String
+  avatarUrl       String?
+  phone           String?
+  dateOfBirth     DateTime?
+  role            UserRole
+  status          UserStatus @default(ACTIVE)
+  emailVerified   Boolean  @default(false)
+  mfaEnabled      Boolean  @default(false)
+  mfaSecret       String?
+  lastLoginAt     DateTime?
+  lastActiveAt    DateTime?
+  preferences     Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Role-specific profiles
+  studentProfile    StudentProfile?
+  instructorProfile InstructorProfile?
+  parentProfile     ParentProfile?
+  adminProfile      AdminProfile?
+  servicesProfile   ServicesProfile?
+  communityProfile  CommunityProfile?
+
+  // Relations
+  sessions        Session[]
+  refreshTokens   RefreshToken[]
+  enrollments     Enrollment[]
+  assignments     Assignment[]  @relation("AssignmentCreator")
+  submissions     Submission[]
+  grades          Grade[]       @relation("GradeStudent")
+  gradesGiven     Grade[]       @relation("GradeInstructor")
+  calendarEvents  CalendarEvent[]
+  tasks           Task[]
+  objectives      Objective[]
+  sentMessages    Message[]     @relation("MessageSender")
+  receivedMessages Message[]    @relation("MessageRecipient")
+  conversations   ConversationParticipant[]
+  announcements   Announcement[]
+  workspaceMembers WorkspaceMember[]
+  workspaceTasks  WorkspaceTask[]
+  workspaceComments WorkspaceComment[]
+  files           File[]
+  folders         Folder[]      @relation("FolderOwner")
+  teamMembers     TeamMember[]
+  conferenceHosts ConferenceRoom[] @relation("ConferenceHost")
+  conferenceParticipants ConferenceParticipant[]
+  serviceRecords  ServiceRecord[]
+  aiConversations AIConversation[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+
+  @@index([email])
+  @@index([organizationId])
+  @@index([role])
+}
+
+enum UserRole {
+  STUDENT
+  INSTRUCTOR
+  PARENT
+  ADMINISTRATOR
+  STUDENT_SERVICES
+  COMMUNITY_SERVICES
+  PUBLIC
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model RefreshToken {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  family       String
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@index([family])
+}
+
+// ==================== ROLE-SPECIFIC PROFILES ====================
+
+model StudentProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentId       String?
+  gradeLevel      Int?
+  graduationYear  Int?
+  gpa             Float?
+  credits         Float?
+  specialNeeds    Boolean  @default(false)
+  iepStatus       String?
+  accommodations  Json     @default("[]")
+  interests       Json     @default("[]")
+  careerGoals     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  parentLinks     ParentStudentLink[]
+  iepDocuments    IEPDocument[]
+
+  @@index([studentId])
+}
+
+model InstructorProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeId      String?
+  department      String?
+  title           String?
+  certifications  Json     @default("[]")
+  subjects        Json     @default("[]")
+  yearsExperience Int?
+  bio             String?
+  officeHours     Json     @default("[]")
+  signature       String?
+  brandColors     Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  courses         Course[]
+  curriculumPlans CurriculumPlan[]
+
+  @@index([employeeId])
+}
+
+model ParentProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occupation      String?
+  employer        String?
+  emergencyContact Boolean @default(false)
+  preferredContact String?
+  communicationPrefs Json  @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  childLinks      ParentStudentLink[]
+}
+
+model AdminProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeId      String?
+  department      String?
+  title           String?
+  permissions     Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ServicesProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeId      String?
+  serviceType     ServiceType
+  licenseNumber   String?
+  certifications  Json     @default("[]")
+  specializations Json     @default("[]")
+  caseloadLimit   Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum ServiceType {
+  SPECIAL_EDUCATION
+  PHYSICAL_THERAPY
+  SPEECH_THERAPY
+  OCCUPATIONAL_THERAPY
+  COUNSELING
+  GUIDANCE
+  PSYCHOLOGY
+  SOCIAL_WORK
+  NURSING
+}
+
+model CommunityProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationName String?
+  role            String?
+  partnerType     CommunityPartnerType?
+  credentials     Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum CommunityPartnerType {
+  CAREER_RECRUITER
+  COLLEGE_RECRUITER
+  FIRE_INSPECTOR
+  FACILITIES
+  LIBRARY
+  VOLUNTEER
+  VENDOR
+  OTHER
+}
+
+model ParentStudentLink {
+  id              String   @id @default(cuid())
+  parentProfileId String
+  parentProfile   ParentProfile @relation(fields: [parentProfileId], references: [id], onDelete: Cascade)
+  studentProfileId String
+  studentProfile  StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  relationship    String   @default("Parent")
+  isPrimary       Boolean  @default(false)
+  canViewGrades   Boolean  @default(true)
+  canCommunicate  Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@unique([parentProfileId, studentProfileId])
+}
+
+// ==================== COURSES & CURRICULUM ====================
+
+model Course {
+  id              String   @id @default(cuid())
+  name            String
+  code            String
+  description     String?
+  syllabus        String?
+  credits         Float?
+  gradeLevel      Int?
+  subject         String?
+  startDate       DateTime?
+  endDate         DateTime?
+  status          CourseStatus @default(DRAFT)
+  maxEnrollment   Int?
+  settings        Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  instructorId    String?
+  instructor      InstructorProfile? @relation(fields: [instructorId], references: [id])
+
+  enrollments     Enrollment[]
+  assignments     Assignment[]
+  curriculumUnits CurriculumUnit[]
+  gradebook       Gradebook?
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([instructorId])
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Enrollment {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId        String
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status          EnrollmentStatus @default(ACTIVE)
+  enrolledAt      DateTime @default(now())
+  completedAt     DateTime?
+  grade           String?
+  finalScore      Float?
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  DROPPED
+  WITHDRAWN
+}
+
+model CurriculumPlan {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  scope           CurriculumScope @default(PERSONAL)
+  gradeLevel      Int?
+  subject         String?
+  standards       Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  instructorId    String
+  instructor      InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  units           CurriculumUnit[]
+
+  @@index([instructorId])
+}
+
+enum CurriculumScope {
+  PERSONAL
+  SHARED
+  GLOBAL
+}
+
+model CurriculumUnit {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  sequence        Int
+  duration        String?
+  objectives      Json     @default("[]")
+  resources       Json     @default("[]")
+  assessments     Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  curriculumPlanId String?
+  curriculumPlan  CurriculumPlan? @relation(fields: [curriculumPlanId], references: [id], onDelete: Cascade)
+  courseId        String?
+  course          Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  learningSets    LearningSet[]
+
+  @@index([curriculumPlanId])
+  @@index([courseId])
+}
+
+model LearningSet {
+  id              String   @id @default(cuid())
+  name            String
+  type            LearningSetType
+  content         Json     @default("{}")
+  duration        Int?     // minutes
+  sequence        Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  curriculumUnitId String
+  curriculumUnit  CurriculumUnit @relation(fields: [curriculumUnitId], references: [id], onDelete: Cascade)
+
+  @@index([curriculumUnitId])
+}
+
+enum LearningSetType {
+  LESSON
+  ACTIVITY
+  DISCUSSION
+  QUIZ
+  PROJECT
+  VIDEO
+  READING
+  PRACTICE
+}
+
+// ==================== ASSIGNMENTS & GRADING ====================
+
+model Assignment {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  instructions    String?
+  type            AssignmentType
+  points          Float?
+  dueDate         DateTime?
+  availableFrom   DateTime?
+  availableUntil  DateTime?
+  allowLateSubmission Boolean @default(true)
+  latePenalty     Float?
+  rubric          Json     @default("[]")
+  attachments     Json     @default("[]")
+  status          AssignmentStatus @default(DRAFT)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  courseId        String
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdById     String
+  createdBy       User     @relation("AssignmentCreator", fields: [createdById], references: [id])
+
+  submissions     Submission[]
+
+  @@index([courseId])
+  @@index([dueDate])
+}
+
+enum AssignmentType {
+  HOMEWORK
+  QUIZ
+  TEST
+  ESSAY
+  PROJECT
+  PRESENTATION
+  DISCUSSION
+  LAB
+  PARTICIPATION
+}
+
+enum AssignmentStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  ARCHIVED
+}
+
+model Submission {
+  id              String   @id @default(cuid())
+  content         String?
+  attachments     Json     @default("[]")
+  submittedAt     DateTime @default(now())
+  isLate          Boolean  @default(false)
+  status          SubmissionStatus @default(SUBMITTED)
+
+  assignmentId    String
+  assignment      Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  grade           Grade?
+
+  @@unique([assignmentId, userId])
+  @@index([assignmentId])
+  @@index([userId])
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  RETURNED
+  RESUBMITTED
+}
+
+model Grade {
+  id              String   @id @default(cuid())
+  score           Float
+  maxScore        Float
+  percentage      Float
+  letterGrade     String?
+  feedback        String?
+  rubricScores    Json     @default("[]")
+  gradedAt        DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  submissionId    String   @unique
+  submission      Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         User     @relation("GradeStudent", fields: [studentId], references: [id])
+  instructorId    String
+  instructor      User     @relation("GradeInstructor", fields: [instructorId], references: [id])
+
+  @@index([studentId])
+  @@index([instructorId])
+}
+
+model Gradebook {
+  id              String   @id @default(cuid())
+  courseId        String   @unique
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  gradingScale    Json     @default("{}")
+  weightCategories Json    @default("[]")
+  dropLowest      Json     @default("{}")
+  settings        Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ==================== CALENDAR & TASKS ====================
+
+model Calendar {
+  id              String   @id @default(cuid())
+  name            String
+  color           String   @default("#3B82F6")
+  isPublic        Boolean  @default(false)
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  events          CalendarEvent[]
+
+  @@index([organizationId])
+}
+
+model CalendarEvent {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  startTime       DateTime
+  endTime         DateTime
+  allDay          Boolean  @default(false)
+  location        String?
+  isRecurring     Boolean  @default(false)
+  recurrenceRule  String?
+  color           String?
+  type            EventType @default(EVENT)
+  visibility      EventVisibility @default(PRIVATE)
+  reminders       Json     @default("[]")
+  metadata        Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  calendarId      String
+  calendar        Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+
+  @@index([calendarId])
+  @@index([userId])
+  @@index([startTime])
+}
+
+enum EventType {
+  EVENT
+  MEETING
+  CLASS
+  DEADLINE
+  HOLIDAY
+  REMINDER
+  APPOINTMENT
+}
+
+enum EventVisibility {
+  PRIVATE
+  PUBLIC
+  ORGANIZATION
+}
+
+model Task {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  dueDate         DateTime?
+  priority        TaskPriority @default(MEDIUM)
+  status          TaskStatus @default(TODO)
+  completedAt     DateTime?
+  tags            Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([dueDate])
+  @@index([status])
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Objective {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  targetDate      DateTime?
+  progress        Float    @default(0)
+  status          ObjectiveStatus @default(ACTIVE)
+  type            ObjectiveType @default(MONTHLY)
+  metrics         Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+enum ObjectiveStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+enum ObjectiveType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+// ==================== MESSAGING & COMMUNICATION ====================
+
+model Conversation {
+  id              String   @id @default(cuid())
+  type            ConversationType @default(DIRECT)
+  name            String?
+  avatarUrl       String?
+  lastMessageAt   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  participants    ConversationParticipant[]
+  messages        Message[]
+
+  @@index([lastMessageAt])
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+  CHANNEL
+  SUPPORT
+}
+
+model ConversationParticipant {
+  id              String   @id @default(cuid())
+  conversationId  String
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role            ParticipantRole @default(MEMBER)
+  lastReadAt      DateTime?
+  isMuted         Boolean  @default(false)
+  joinedAt        DateTime @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+enum ParticipantRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  content         String
+  type            MessageType @default(TEXT)
+  attachments     Json     @default("[]")
+  metadata        Json     @default("{}")
+  isEdited        Boolean  @default(false)
+  isDeleted       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  conversationId  String
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId        String
+  sender          User     @relation("MessageSender", fields: [senderId], references: [id])
+  recipientId     String?
+  recipient       User?    @relation("MessageRecipient", fields: [recipientId], references: [id])
+  replyToId       String?
+  replyTo         Message? @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies         Message[] @relation("MessageReplies")
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  VIDEO
+  AUDIO
+  SYSTEM
+}
+
+model Announcement {
+  id              String   @id @default(cuid())
+  title           String
+  content         String
+  type            AnnouncementType @default(INFO)
+  priority        AnnouncementPriority @default(NORMAL)
+  targetRoles     Json     @default("[]")
+  isPublished     Boolean  @default(false)
+  publishedAt     DateTime?
+  expiresAt       DateTime?
+  isPinned        Boolean  @default(false)
+  attachments     Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id])
+
+  @@index([organizationId])
+  @@index([publishedAt])
+}
+
+enum AnnouncementType {
+  INFO
+  WARNING
+  ALERT
+  SUCCESS
+  EVENT
+}
+
+enum AnnouncementPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+// ==================== WORKSPACES & PROJECTS ====================
+
+model Workspace {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  type            WorkspaceType @default(PROJECT)
+  status          WorkspaceStatus @default(ACTIVE)
+  color           String   @default("#3B82F6")
+  icon            String?
+  settings        Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  members         WorkspaceMember[]
+  tasks           WorkspaceTask[]
+  columns         WorkspaceColumn[]
+  files           WorkspaceFile[]
+
+  @@index([organizationId])
+}
+
+enum WorkspaceType {
+  PROJECT
+  TEAM
+  DEPARTMENT
+  COURSE
+  PERSONAL
+}
+
+enum WorkspaceStatus {
+  ACTIVE
+  ARCHIVED
+  COMPLETED
+}
+
+model WorkspaceMember {
+  id              String   @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role            WorkspaceMemberRole @default(MEMBER)
+  joinedAt        DateTime @default(now())
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+enum WorkspaceMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model WorkspaceColumn {
+  id              String   @id @default(cuid())
+  name            String
+  color           String?
+  sequence        Int
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  tasks           WorkspaceTask[]
+
+  @@index([workspaceId])
+}
+
+model WorkspaceTask {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  priority        TaskPriority @default(MEDIUM)
+  dueDate         DateTime?
+  sequence        Int
+  tags            Json     @default("[]")
+  attachments     Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  columnId        String
+  column          WorkspaceColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  assigneeId      String?
+  assignee        User?    @relation(fields: [assigneeId], references: [id])
+
+  comments        WorkspaceComment[]
+
+  @@index([workspaceId])
+  @@index([columnId])
+  @@index([assigneeId])
+}
+
+model WorkspaceComment {
+  id              String   @id @default(cuid())
+  content         String
+  attachments     Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  taskId          String
+  task            WorkspaceTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id])
+
+  @@index([taskId])
+}
+
+model WorkspaceFile {
+  id              String   @id @default(cuid())
+  name            String
+  fileId          String
+  file            File     @relation(fields: [fileId], references: [id])
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+
+  @@index([workspaceId])
+}
+
+// ==================== FILES & FOLDERS ====================
+
+model Folder {
+  id              String   @id @default(cuid())
+  name            String
+  parentId        String?
+  parent          Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children        Folder[] @relation("FolderHierarchy")
+  color           String?
+  isShared        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerId         String
+  owner           User     @relation("FolderOwner", fields: [ownerId], references: [id])
+
+  files           File[]
+
+  @@index([parentId])
+  @@index([ownerId])
+}
+
+model File {
+  id              String   @id @default(cuid())
+  name            String
+  originalName    String
+  mimeType        String
+  size            Int
+  path            String
+  url             String?
+  thumbnailUrl    String?
+  isPublic        Boolean  @default(false)
+  metadata        Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  folderId        String?
+  folder          Folder?  @relation(fields: [folderId], references: [id])
+  uploadedById    String
+  uploadedBy      User     @relation(fields: [uploadedById], references: [id])
+
+  workspaceFiles  WorkspaceFile[]
+
+  @@index([folderId])
+  @@index([uploadedById])
+}
+
+// ==================== TEAMS ====================
+
+model Team {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  avatarUrl       String?
+  type            TeamType @default(GENERAL)
+  isPublic        Boolean  @default(false)
+  settings        Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  members         TeamMember[]
+
+  @@index([organizationId])
+}
+
+enum TeamType {
+  GENERAL
+  CLASS
+  CLUB
+  SPORT
+  DEPARTMENT
+  COMMITTEE
+}
+
+model TeamMember {
+  id              String   @id @default(cuid())
+  teamId          String
+  team            Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role            TeamMemberRole @default(MEMBER)
+  joinedAt        DateTime @default(now())
+
+  @@unique([teamId, userId])
+  @@index([userId])
+}
+
+enum TeamMemberRole {
+  OWNER
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+// ==================== VIDEO CONFERENCING ====================
+
+model ConferenceRoom {
+  id              String   @id @default(cuid())
+  name            String
+  roomId          String   @unique
+  type            ConferenceType @default(VIDEO_CALL)
+  status          ConferenceStatus @default(SCHEDULED)
+  scheduledStart  DateTime?
+  scheduledEnd    DateTime?
+  actualStart     DateTime?
+  actualEnd       DateTime?
+  maxParticipants Int      @default(50)
+  settings        Json     @default("{}")
+  recordingUrl    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  hostId          String
+  host            User     @relation("ConferenceHost", fields: [hostId], references: [id])
+
+  participants    ConferenceParticipant[]
+
+  @@index([hostId])
+  @@index([roomId])
+}
+
+enum ConferenceType {
+  VIDEO_CALL
+  AUDIO_CALL
+  WEBINAR
+  SCREEN_SHARE
+}
+
+enum ConferenceStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+model ConferenceParticipant {
+  id              String   @id @default(cuid())
+  roomId          String
+  room            ConferenceRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  role            ConferenceParticipantRole @default(ATTENDEE)
+  joinedAt        DateTime?
+  leftAt          DateTime?
+  isAudioEnabled  Boolean  @default(true)
+  isVideoEnabled  Boolean  @default(true)
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+enum ConferenceParticipantRole {
+  HOST
+  CO_HOST
+  PRESENTER
+  ATTENDEE
+}
+
+// ==================== STUDENT SERVICES ====================
+
+model ServiceRecord {
+  id              String   @id @default(cuid())
+  type            ServiceType
+  sessionDate     DateTime
+  duration        Int      // minutes
+  notes           String?
+  goals           Json     @default("[]")
+  progress        Json     @default("{}")
+  attachments     Json     @default("[]")
+  status          ServiceRecordStatus @default(SCHEDULED)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  studentId       String
+  student         User     @relation(fields: [studentId], references: [id])
+
+  @@index([studentId])
+  @@index([sessionDate])
+}
+
+enum ServiceRecordStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model IEPDocument {
+  id              String   @id @default(cuid())
+  studentProfileId String
+  studentProfile  StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  type            IEPDocumentType
+  title           String
+  content         Json     @default("{}")
+  effectiveDate   DateTime
+  expirationDate  DateTime?
+  status          IEPStatus @default(DRAFT)
+  approvedBy      Json     @default("[]")
+  attachments     Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([studentProfileId])
+}
+
+enum IEPDocumentType {
+  IEP
+  EVALUATION
+  PROGRESS_REPORT
+  MEETING_NOTES
+  AMENDMENT
+}
+
+enum IEPStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  ACTIVE
+  EXPIRED
+  ARCHIVED
+}
+
+// ==================== AI ASSISTANT ====================
+
+model AIConversation {
+  id              String   @id @default(cuid())
+  title           String?
+  context         Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  messages        AIMessage[]
+
+  @@index([userId])
+}
+
+model AIMessage {
+  id              String   @id @default(cuid())
+  role            AIMessageRole
+  content         String
+  metadata        Json     @default("{}")
+  isFiltered      Boolean  @default(false)
+  filterReason    String?
+  createdAt       DateTime @default(now())
+
+  conversationId  String
+  conversation    AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+enum AIMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id              String   @id @default(cuid())
+  type            NotificationType
+  title           String
+  message         String
+  data            Json     @default("{}")
+  isRead          Boolean  @default(false)
+  readAt          DateTime?
+  createdAt       DateTime @default(now())
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  MESSAGE
+  ASSIGNMENT
+  GRADE
+  ANNOUNCEMENT
+  CALENDAR
+  TASK
+  SYSTEM
+  ALERT
+}
+
+// ==================== AUDIT LOGGING ====================
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  action          AuditAction
+  entityType      String
+  entityId        String?
+  oldValues       Json?
+  newValues       Json?
+  ipAddress       String?
+  userAgent       String?
+  metadata        Json     @default("{}")
+  createdAt       DateTime @default(now())
+
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@index([action])
+}
+
+enum AuditAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  IMPORT
+  SHARE
+  DOWNLOAD
+  UPLOAD
+  APPROVE
+  REJECT
+  SUBMIT
+  GRADE
+}
