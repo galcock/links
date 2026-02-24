@@ -72,8 +72,8 @@ export default function CompliancePage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-violet-600 flex items-center justify-center">
-              <GraduationCap className="h-6 w-6 text-white" />
+            <div className="h-10 flex items-center">
+              <img src="/links-logo.png" alt="LINKS" className="h-10 w-auto" />
             </div>
             <span className="font-bold text-xl">LINKS</span>
           </Link>
@@ -87,7 +87,7 @@ export default function CompliancePage() {
         <div className="container mx-auto max-w-6xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
             <Badge className="mb-4 bg-green-100 text-green-700">Fully Compliant</Badge>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
               Compliance Center
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -107,7 +107,7 @@ export default function CompliancePage() {
                   <CardHeader>
                     <div className="flex items-center gap-3 mb-2">
                       <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                        <area.icon className="h-5 w-5 text-purple-600" />
+                        <area.icon className="h-5 w-5 text-red-600" />
                       </div>
                       <div>
                         <CardTitle className="text-xl">{area.title}</CardTitle>
@@ -131,7 +131,7 @@ export default function CompliancePage() {
           </div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-12">
-            <Card className="bg-gradient-to-br from-purple-600 to-violet-600 text-white border-0">
+            <Card className="bg-gradient-to-br from-red-600 to-red-500 text-white border-0">
               <CardContent className="p-8 text-center">
                 <Eye className="h-12 w-12 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold mb-4">Transparency Commitment</h2>

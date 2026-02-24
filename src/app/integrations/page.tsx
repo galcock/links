@@ -35,8 +35,8 @@ export default function IntegrationsPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-violet-600 flex items-center justify-center">
-              <GraduationCap className="h-6 w-6 text-white" />
+            <div className="h-10 flex items-center">
+              <img src="/links-logo.png" alt="LINKS" className="h-10 w-auto" />
             </div>
             <span className="font-bold text-xl">LINKS</span>
           </Link>
@@ -49,8 +49,8 @@ export default function IntegrationsPage() {
       <main className="pt-32 pb-20 px-6">
         <div className="container mx-auto max-w-6xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-            <Badge className="mb-4 bg-purple-100 text-purple-700">Seamless Connectivity</Badge>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+            <Badge className="mb-4 bg-red-100 text-red-700">Seamless Connectivity</Badge>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
               Integrations
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -66,7 +66,7 @@ export default function IntegrationsPage() {
                 variant={filter === cat ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setFilter(cat)}
-                className={filter === cat ? 'bg-gradient-to-r from-purple-600 to-violet-600' : ''}
+                className={filter === cat ? 'bg-gradient-to-r from-red-600 to-red-500' : ''}
               >
                 {cat}
               </Button>
@@ -85,7 +85,7 @@ export default function IntegrationsPage() {
                       {integration.status}
                     </Badge>
                   </div>
-                  <h3 className="font-semibold text-lg group-hover:text-purple-600 transition-colors">{integration.name}</h3>
+                  <h3 className="font-semibold text-lg group-hover:text-red-600 transition-colors">{integration.name}</h3>
                   <p className="text-sm text-muted-foreground">{integration.category}</p>
                 </CardContent>
               </Card>
@@ -94,7 +94,7 @@ export default function IntegrationsPage() {
 
           {/* CTA */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-12">
-            <Card className="bg-gradient-to-br from-purple-600 to-violet-600 text-white border-0">
+            <Card className="bg-gradient-to-br from-red-600 to-red-500 text-white border-0">
               <CardContent className="p-8 text-center">
                 <Plug className="h-12 w-12 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold mb-4">Need a Custom Integration?</h2>

@@ -32,8 +32,8 @@ export default function ContactPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-violet-600 flex items-center justify-center">
-              <GraduationCap className="h-6 w-6 text-white" />
+            <div className="h-10 flex items-center">
+              <img src="/links-logo.png" alt="LINKS" className="h-10 w-auto" />
             </div>
             <span className="font-bold text-xl">LINKS</span>
           </Link>
@@ -53,7 +53,7 @@ export default function ContactPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-12"
           >
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
               Contact Us
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -71,7 +71,7 @@ export default function ContactPage() {
               <Card className="h-full">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-purple-600" />
+                    <MessageSquare className="h-5 w-5 text-red-600" />
                     Send a Message
                   </CardTitle>
                   <CardDescription>Fill out the form and we'll get back to you within 24 hours.</CardDescription>
@@ -106,7 +106,7 @@ export default function ContactPage() {
                         placeholder="Your Message"
                         required
                       />
-                      <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-violet-600">
+                      <Button type="submit" className="w-full bg-gradient-to-r from-red-600 to-red-500">
                         <Send className="h-4 w-4 mr-2" />
                         Send Message
                       </Button>
@@ -127,7 +127,7 @@ export default function ContactPage() {
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                      <Mail className="h-6 w-6 text-purple-600" />
+                      <Mail className="h-6 w-6 text-red-600" />
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">Email Us</h3>
@@ -142,7 +142,7 @@ export default function ContactPage() {
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                      <Phone className="h-6 w-6 text-purple-600" />
+                      <Phone className="h-6 w-6 text-red-600" />
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">Call Us</h3>
@@ -157,12 +157,12 @@ export default function ContactPage() {
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                      <MapPin className="h-6 w-6 text-purple-600" />
+                      <MapPin className="h-6 w-6 text-red-600" />
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">Visit Us</h3>
                       <p className="text-muted-foreground">LINKS Education, Inc.</p>
-                      <p className="text-muted-foreground">Los Angeles, CA</p>
+                      <p className="text-muted-foreground">New York, NY</p>
                     </div>
                   </div>
                 </CardContent>
@@ -172,7 +172,7 @@ export default function ContactPage() {
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                      <Clock className="h-6 w-6 text-purple-600" />
+                      <Clock className="h-6 w-6 text-red-600" />
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">Business Hours</h3>

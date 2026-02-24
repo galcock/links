@@ -43,7 +43,7 @@ const jobs = [
   {
     title: 'Customer Success Manager',
     department: 'Customer Success',
-    location: 'Los Angeles, CA',
+    location: 'New York, NY',
     type: 'Full-time',
     description: 'Help schools and districts succeed with LINKS implementation.',
   },
@@ -70,8 +70,8 @@ export default function CareersPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-violet-600 flex items-center justify-center">
-              <GraduationCap className="h-6 w-6 text-white" />
+            <div className="h-10 flex items-center">
+              <img src="/links-logo.png" alt="LINKS" className="h-10 w-auto" />
             </div>
             <span className="font-bold text-xl">LINKS</span>
           </Link>
@@ -92,8 +92,8 @@ export default function CareersPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-16"
           >
-            <Badge className="mb-6 bg-purple-100 text-purple-700">We're Hiring!</Badge>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+            <Badge className="mb-6 bg-red-100 text-red-700">We're Hiring!</Badge>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
               Join Our Team
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -114,7 +114,7 @@ export default function CareersPage() {
                 <Card key={benefit.title} className="text-center hover:shadow-lg transition-shadow">
                   <CardContent className="p-6">
                     <div className="h-12 w-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mx-auto mb-4">
-                      <benefit.icon className="h-6 w-6 text-purple-600" />
+                      <benefit.icon className="h-6 w-6 text-red-600" />
                     </div>
                     <h3 className="font-semibold mb-1">{benefit.title}</h3>
                     <p className="text-sm text-muted-foreground">{benefit.description}</p>
@@ -143,7 +143,7 @@ export default function CareersPage() {
                     <CardContent className="p-6">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
-                          <h3 className="font-semibold text-lg group-hover:text-purple-600 transition-colors">
+                          <h3 className="font-semibold text-lg group-hover:text-red-600 transition-colors">
                             {job.title}
                           </h3>
                           <p className="text-sm text-muted-foreground mb-3">{job.description}</p>
@@ -162,7 +162,7 @@ export default function CareersPage() {
                             </Badge>
                           </div>
                         </div>
-                        <Button className="shrink-0 bg-gradient-to-r from-purple-600 to-violet-600">
+                        <Button className="shrink-0 bg-gradient-to-r from-red-600 to-red-500">
                           Apply
                           <ArrowRight className="h-4 w-4 ml-2" />
                         </Button>
@@ -181,7 +181,7 @@ export default function CareersPage() {
             transition={{ delay: 0.5 }}
             className="mt-16 text-center"
           >
-            <Card className="bg-gradient-to-br from-purple-600 to-violet-600 text-white border-0">
+            <Card className="bg-gradient-to-br from-red-600 to-red-500 text-white border-0">
               <CardContent className="p-8">
                 <h3 className="text-2xl font-bold mb-4">Don't see the right role?</h3>
                 <p className="text-purple-100 mb-6">

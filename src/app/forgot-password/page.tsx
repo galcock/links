@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-600 to-violet-600 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-red-600 to-red-500 flex items-center justify-center">
               <GraduationCap className="h-7 w-7 text-white" />
             </div>
             <span className="font-bold text-2xl">LINKS</span>
@@ -66,7 +66,7 @@ export default function ForgotPasswordPage() {
                   If an account exists for <strong>{email}</strong>, you'll receive password reset instructions shortly.
                 </p>
                 <div className="space-y-3">
-                  <Button asChild className="w-full bg-gradient-to-r from-purple-600 to-violet-600">
+                  <Button asChild className="w-full bg-gradient-to-r from-red-600 to-red-500">
                     <Link href="/login">Return to Login</Link>
                   </Button>
                   <Button variant="ghost" className="w-full" onClick={() => setSubmitted(false)}>
@@ -94,7 +94,7 @@ export default function ForgotPasswordPage() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-purple-600 to-violet-600"
+                  className="w-full bg-gradient-to-r from-red-600 to-red-500"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -108,7 +108,7 @@ export default function ForgotPasswordPage() {
                 </Button>
 
                 <div className="text-center">
-                  <Link href="/login" className="text-sm text-purple-600 hover:underline inline-flex items-center gap-1">
+                  <Link href="/login" className="text-sm text-red-600 hover:underline inline-flex items-center gap-1">
                     <ArrowLeft className="h-3 w-3" />
                     Back to Login
                   </Link>
@@ -120,7 +120,7 @@ export default function ForgotPasswordPage() {
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           Don't have an account?{' '}
-          <Link href="/register" className="text-purple-600 hover:underline font-medium">
+          <Link href="/register" className="text-red-600 hover:underline font-medium">
             Sign up
           </Link>
         </p>

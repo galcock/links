@@ -94,23 +94,20 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-violet-600 flex items-center justify-center">
-              <GraduationCap className="h-6 w-6 text-white" />
-            </div>
-            <span className="font-bold text-xl">LINKS</span>
+          <Link href="/" className="flex items-center">
+            <img src="/links-logo.png" alt="LINKS" className="h-10 w-auto" />
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            <Link href="#features" className="text-sm font-medium hover:text-purple-600 transition-colors">
+            <Link href="#features" className="text-sm font-medium hover:text-red-600 transition-colors">
               Features
             </Link>
-            <Link href="#roles" className="text-sm font-medium hover:text-purple-600 transition-colors">
+            <Link href="#roles" className="text-sm font-medium hover:text-red-600 transition-colors">
               Portals
             </Link>
-            <Link href="#pricing" className="text-sm font-medium hover:text-purple-600 transition-colors">
+            <Link href="#pricing" className="text-sm font-medium hover:text-red-600 transition-colors">
               Pricing
             </Link>
-            <Link href="/contact" className="text-sm font-medium hover:text-purple-600 transition-colors">
+            <Link href="/contact" className="text-sm font-medium hover:text-red-600 transition-colors">
               Contact
             </Link>
           </div>
@@ -118,7 +115,7 @@ export default function LandingPage() {
             <Button variant="ghost" asChild>
               <Link href="/login">Sign In</Link>
             </Button>
-            <Button asChild className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700">
+            <Button asChild className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600">
               <Link href="/register">Get Started</Link>
             </Button>
           </div>
@@ -134,7 +131,7 @@ export default function LandingPage() {
             transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <Badge className="mb-6 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+            <Badge className="mb-6 bg-red-100 text-red-700 dark:bg-purple-900/30 dark:text-purple-400">
               <Sparkles className="h-3 w-3 mr-1" />
               The Future of Education is Here
             </Badge>
@@ -146,7 +143,7 @@ export default function LandingPage() {
               student-centered portal that connects everyone in education.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button size="xl" asChild className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700">
+              <Button size="xl" asChild className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600">
                 <Link href="/register">
                   Start Free Trial
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -170,7 +167,7 @@ export default function LandingPage() {
           >
             <div className="absolute inset-0 bg-gradient-to-t from-slate-50 dark:from-slate-950 via-transparent to-transparent z-10 pointer-events-none" />
             <div className="rounded-2xl border shadow-2xl overflow-hidden bg-gradient-to-br from-purple-100 to-violet-100 dark:from-purple-900/20 dark:to-violet-900/20 p-8">
-              <div className="grid grid-cols-7 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
                 {roles.map((role, i) => (
                   <motion.div
                     key={role.name}
@@ -179,8 +176,8 @@ export default function LandingPage() {
                     transition={{ delay: 0.3 + i * 0.1 }}
                     className={`aspect-square rounded-xl bg-gradient-to-br ${role.gradient} flex flex-col items-center justify-center text-white shadow-lg hover:scale-105 transition-transform cursor-pointer`}
                   >
-                    <span className="text-3xl mb-2">{role.icon}</span>
-                    <span className="text-xs font-medium">{role.name}</span>
+                    <span className="text-2xl sm:text-3xl mb-1 sm:mb-2">{role.icon}</span>
+                    <span className="text-sm font-semibold drop-shadow-md">{role.name}</span>
                   </motion.div>
                 ))}
               </div>
@@ -202,7 +199,7 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 className="text-center"
               >
-                <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
                   {stat.value}
                 </div>
                 <div className="text-muted-foreground mt-1">{stat.label}</div>
@@ -334,7 +331,7 @@ export default function LandingPage() {
               Join thousands of schools already using LINKS to create better educational outcomes.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button size="xl" asChild className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700">
+              <Button size="xl" asChild className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600">
                 <Link href="/register">
                   Get Started Free
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -353,11 +350,8 @@ export default function LandingPage() {
         <div className="container mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
-              <Link href="/" className="flex items-center gap-3 mb-4">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-violet-600 flex items-center justify-center">
-                  <GraduationCap className="h-6 w-6 text-white" />
-                </div>
-                <span className="font-bold text-xl">LINKS</span>
+              <Link href="/" className="flex items-center mb-4">
+                <img src="/links-logo.png" alt="LINKS" className="h-10 w-auto" />
               </Link>
               <p className="text-sm text-muted-foreground">
                 The world's first Comprehensive Education System.

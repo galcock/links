@@ -34,8 +34,8 @@ export default function HelpPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-violet-600 flex items-center justify-center">
-              <GraduationCap className="h-6 w-6 text-white" />
+            <div className="h-10 flex items-center">
+              <img src="/links-logo.png" alt="LINKS" className="h-10 w-auto" />
             </div>
             <span className="font-bold text-xl">LINKS</span>
           </Link>
@@ -49,7 +49,7 @@ export default function HelpPage() {
         <div className="container mx-auto max-w-6xl">
           {/* Hero */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
               Help Center
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
@@ -77,10 +77,10 @@ export default function HelpPage() {
                 <Card key={cat.name} className="hover:shadow-lg transition-shadow cursor-pointer group">
                   <CardContent className="p-6 flex items-center gap-4">
                     <div className="h-12 w-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                      <cat.icon className="h-6 w-6 text-purple-600" />
+                      <cat.icon className="h-6 w-6 text-red-600" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold group-hover:text-purple-600 transition-colors">{cat.name}</h3>
+                      <h3 className="font-semibold group-hover:text-red-600 transition-colors">{cat.name}</h3>
                       <p className="text-sm text-muted-foreground">{cat.count} articles</p>
                     </div>
                     <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
@@ -98,7 +98,7 @@ export default function HelpPage() {
                 {popularArticles.map((article) => (
                   <div key={article.title} className="p-4 hover:bg-muted/50 transition-colors cursor-pointer flex items-center justify-between group">
                     <div>
-                      <h3 className="font-medium group-hover:text-purple-600 transition-colors">{article.title}</h3>
+                      <h3 className="font-medium group-hover:text-red-600 transition-colors">{article.title}</h3>
                       <p className="text-sm text-muted-foreground">{article.category}</p>
                     </div>
                     <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
@@ -110,7 +110,7 @@ export default function HelpPage() {
 
           {/* Contact Support */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <Card className="bg-gradient-to-br from-purple-600 to-violet-600 text-white border-0">
+            <Card className="bg-gradient-to-br from-red-600 to-red-500 text-white border-0">
               <CardContent className="p-8 text-center">
                 <MessageCircle className="h-12 w-12 mx-auto mb-4" />
                 <h2 className="text-2xl font-bold mb-4">Still Need Help?</h2>

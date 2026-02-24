@@ -65,8 +65,8 @@ export default function BlogPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-violet-600 flex items-center justify-center">
-              <GraduationCap className="h-6 w-6 text-white" />
+            <div className="h-10 flex items-center">
+              <img src="/links-logo.png" alt="LINKS" className="h-10 w-auto" />
             </div>
             <span className="font-bold text-xl">LINKS</span>
           </Link>
@@ -79,7 +79,7 @@ export default function BlogPage() {
       <main className="pt-32 pb-20 px-6">
         <div className="container mx-auto max-w-6xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
               Blog
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -92,12 +92,12 @@ export default function BlogPage() {
             <Card className="overflow-hidden hover:shadow-xl transition-shadow cursor-pointer group">
               <CardContent className="p-0">
                 <div className="grid md:grid-cols-2">
-                  <div className="bg-gradient-to-br from-purple-600 to-violet-600 p-12 flex items-center justify-center">
+                  <div className="bg-gradient-to-br from-red-600 to-red-500 p-12 flex items-center justify-center">
                     <span className="text-8xl">{posts[0].image}</span>
                   </div>
                   <div className="p-8 flex flex-col justify-center">
-                    <Badge className="w-fit mb-4 bg-purple-100 text-purple-700">{posts[0].category}</Badge>
-                    <h2 className="text-2xl font-bold mb-4 group-hover:text-purple-600 transition-colors">{posts[0].title}</h2>
+                    <Badge className="w-fit mb-4 bg-red-100 text-red-700">{posts[0].category}</Badge>
+                    <h2 className="text-2xl font-bold mb-4 group-hover:text-red-600 transition-colors">{posts[0].title}</h2>
                     <p className="text-muted-foreground mb-4">{posts[0].excerpt}</p>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />{posts[0].date}</span>
@@ -122,7 +122,7 @@ export default function BlogPage() {
                   <CardContent className="p-6">
                     <div className="text-5xl mb-4">{post.image}</div>
                     <Badge variant="secondary" className="mb-3">{post.category}</Badge>
-                    <h3 className="font-semibold text-lg mb-2 group-hover:text-purple-600 transition-colors">{post.title}</h3>
+                    <h3 className="font-semibold text-lg mb-2 group-hover:text-red-600 transition-colors">{post.title}</h3>
                     <p className="text-sm text-muted-foreground mb-4">{post.excerpt}</p>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span>{post.date}</span>
