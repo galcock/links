@@ -1,228 +1,181 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useUserStore } from '@/lib/store';
-import { ROLE_THEMES } from '@/lib/constants';
-import {
-  GraduationCap,
-  Mail,
-  Lock,
-  ArrowRight,
-  Loader2,
-  Eye,
-  EyeOff,
-} from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import { Mail, Lock, Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
-const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
-
-function LoginContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { setUser } = useUserStore();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const selectedRole = searchParams.get('role')?.toUpperCase() || 'STUDENT';
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
-  });
-
-  const onSubmit = async (data: LoginForm) => {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Login failed');
-      }
-
-      setUser(result.user);
-      
-      // Redirect based on role
-      const roleRoutes: Record<string, string> = {
-        STUDENT: '/student',
-        INSTRUCTOR: '/instructor',
-        PARENT: '/parent',
-        ADMINISTRATOR: '/admin',
-        STUDENT_SERVICES: '/services',
-        COMMUNITY_SERVICES: '/community',
-        PUBLIC: '/public',
-      };
-      
-      router.push(roleRoutes[result.user.role] || '/');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const theme = ROLE_THEMES[selectedRole as keyof typeof ROLE_THEMES] || ROLE_THEMES.STUDENT;
-
-  return (
-    <div className="min-h-screen flex">
-      {/* Left Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="w-full max-w-md"
-        >
-          <Link href="/" className="flex items-center gap-3 mb-8">
-            <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${theme.gradient} flex items-center justify-center`}>
-              <GraduationCap className="h-7 w-7 text-white" />
-            </div>
-            <div>
-              <span className="font-bold text-2xl">LINKS</span>
-              <Badge className="ml-2" variant={selectedRole.toLowerCase() as "student"}>
-                {theme.name}
-              </Badge>
-            </div>
-          </Link>
-
-          <Card className="border-0 shadow-2xl">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-2xl">Welcome back</CardTitle>
-              <CardDescription>
-                Sign in to your {theme.name.toLowerCase()} account
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm"
-                  >
-                    {error}
-                  </motion.div>
-                )}
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Email</label>
-                  <Input
-                    {...register('email')}
-                    type="email"
-                    placeholder="you@school.edu"
-                    leftIcon={<Mail className="h-4 w-4" />}
-                    error={errors.email?.message}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">Password</label>
-                    <Link
-                      href="/forgot-password"
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <Input
-                    {...register('password')}
-                    type="password"
-                    placeholder="••••••••"
-                    leftIcon={<Lock className="h-4 w-4" />}
-                    error={errors.password?.message}
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  className={`w-full bg-gradient-to-r ${theme.gradient} hover:opacity-90`}
-                  size="lg"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <>
-                      Sign In
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </>
-                  )}
-                </Button>
-
-                <p className="text-center text-sm text-muted-foreground">
-                  Don't have an account?{' '}
-                  <Link href="/register" className="text-primary hover:underline font-medium">
-                    Sign up
-                  </Link>
-                </p>
-              </form>
-            </CardContent>
-          </Card>
-
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            By signing in, you agree to our{' '}
-            <Link href="/terms" className="underline">Terms of Service</Link> and{' '}
-            <Link href="/privacy" className="underline">Privacy Policy</Link>
-          </p>
-        </motion.div>
-      </div>
-
-      {/* Right Panel - Branding */}
-      <div className={`hidden lg:flex flex-1 bg-gradient-to-br ${theme.gradient} items-center justify-center p-12`}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-center text-white max-w-lg"
-        >
-          <div className="text-8xl mb-8">{theme.icon}</div>
-          <h2 className="text-4xl font-bold mb-4">
-            {theme.name} Portal
-          </h2>
-          <p className="text-xl text-white/80">
-            Access your personalized dashboard with all the tools you need for success.
-          </p>
-          <div className="mt-12 grid grid-cols-2 gap-4">
-            {['Real-time Updates', 'Secure Access', 'AI Assistant', '24/7 Support'].map((feature) => (
-              <div key={feature} className="flex items-center gap-2 text-white/90">
-                <div className="h-2 w-2 rounded-full bg-white" />
-                <span className="text-sm">{feature}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
+const roleRedirects: Record<string, string> = {
+  STUDENT: '/student',
+  INSTRUCTOR: '/instructor',
+  PARENT: '/parent',
+  ADMINISTRATOR: '/admin',
+  STUDENT_SERVICES: '/services',
+  COMMUNITY_SERVICES: '/community',
+  PUBLIC: '/public',
+};
 
 export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login, isAuthenticated, user, isLoading: authLoading } = useAuth();
+  
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user) {
+      const redirect = roleRedirects[user.role] || '/student';
+      router.push(redirect);
+    }
+  }, [authLoading, isAuthenticated, user, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    const result = await login(email, password);
+    
+    if (result.success) {
+      // Get the role from the logged-in user
+      const roleParam = searchParams.get('role');
+      const redirect = roleParam 
+        ? roleRedirects[roleParam.toUpperCase()] || '/student'
+        : '/student';
+      router.push(redirect);
+    } else {
+      setError(result.error || 'Login failed');
+    }
+    
+    setIsLoading(false);
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+      </div>
+    );
+  }
+
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-      <LoginContent />
-    </Suspense>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-red-50 to-orange-50 dark:from-slate-950 dark:via-red-950 dark:to-orange-950 flex items-center justify-center p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md"
+      >
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-block">
+            <img src="/links-logo.png" alt="LINKS" className="h-12 w-auto mx-auto" />
+          </Link>
+        </div>
+
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Welcome Back</CardTitle>
+            <CardDescription>Sign in to your LINKS account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center gap-2 text-red-700 dark:text-red-400"
+                >
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span className="text-sm">{error}</span>
+                </motion.div>
+              )}
+
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-sm font-medium">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@school.edu"
+                    className="pl-10"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="text-sm font-medium">Password</label>
+                  <Link href="/forgot-password" className="text-sm text-red-600 hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    className="pl-10 pr-10"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center text-sm text-muted-foreground">
+              <p>Demo accounts (password: Demo1234):</p>
+              <p className="text-xs mt-1">student@demo.com, instructor@demo.com, parent@demo.com, admin@demo.com</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          Don't have an account?{' '}
+          <Link href="/register" className="text-red-600 hover:underline font-medium">
+            Sign up
+          </Link>
+        </p>
+      </motion.div>
+    </div>
   );
 }
