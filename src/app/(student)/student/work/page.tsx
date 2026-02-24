@@ -1,113 +1,129 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
-  FileText,
+  ClipboardList,
   Clock,
-  CheckCircle2,
   AlertCircle,
+  CheckCircle2,
   Calendar,
+  FileText,
   Filter,
   Plus,
-  ChevronRight,
-  Upload,
-  Eye,
-  Edit,
-  Trash2,
+  Loader2,
 } from 'lucide-react';
+import { useAssignments } from '@/lib/hooks/use-assignments';
+import { useWorkspaces, useWorkspaceTasks } from '@/lib/hooks/use-workspaces';
+import { useCurrentUser } from '@/lib/hooks/use-auth';
+import { useToast } from '@/components/ui/toast';
 
-const assignments = [
-  {
-    id: 1,
-    title: 'Quadratic Equations Practice',
-    course: 'Algebra II',
-    type: 'Homework',
-    due: 'Today, 11:59 PM',
-    status: 'in-progress',
-    progress: 75,
-    points: 100,
-    submitted: false,
-  },
-  {
-    id: 2,
-    title: 'Lab Report: Photosynthesis',
-    course: 'Biology',
-    type: 'Lab Report',
-    due: 'Tomorrow, 3:00 PM',
-    status: 'in-progress',
-    progress: 40,
-    points: 150,
-    submitted: false,
-  },
-  {
-    id: 3,
-    title: 'World War II Essay',
-    course: 'World History',
-    type: 'Essay',
-    due: 'Friday',
-    status: 'not-started',
-    progress: 0,
-    points: 200,
-    submitted: false,
-  },
-  {
-    id: 4,
-    title: 'Shakespeare Analysis',
-    course: 'English Literature',
-    type: 'Analysis',
-    due: 'Next Monday',
-    status: 'not-started',
-    progress: 0,
-    points: 100,
-    submitted: false,
-  },
-];
+export default function StudentWork() {
+  const { data: user } = useCurrentUser();
+  const [filter, setFilter] = React.useState<'all' | 'pending' | 'completed'>('all');
 
-const completedWork = [
-  { title: 'Chapter 4 Test', course: 'Algebra II', grade: 'A', score: 95, date: '2 days ago' },
-  { title: 'Cell Structure Quiz', course: 'Biology', grade: 'A-', score: 92, date: '3 days ago' },
-  { title: 'Primary Sources Analysis', course: 'History', grade: 'B+', score: 88, date: '5 days ago' },
-  { title: 'Poetry Analysis', course: 'English', grade: 'A', score: 96, date: '1 week ago' },
-];
+  const { data: assignmentsData, isLoading: assignmentsLoading } = useAssignments({
+    status: filter === 'completed' ? 'GRADED' : 'ACTIVE',
+    limit: 100,
+  });
 
-const upcomingTests = [
-  { title: 'Chapter 5 Test', course: 'Algebra II', date: 'Friday, Feb 28', topics: ['Quadratics', 'Factoring'] },
-  { title: 'Cell Biology Exam', course: 'Biology', date: 'Monday, Mar 3', topics: ['Mitosis', 'Meiosis', 'Cell Cycle'] },
-];
+  const { data: workspacesData } = useWorkspaces({ limit: 50 });
 
-export default function StudentWorkPage() {
-  const [activeTab, setActiveTab] = useState('pending');
+  const toast = useToast();
+
+  // Categorize assignments
+  const assignments = React.useMemo(() => {
+    if (!assignmentsData?.data) return { overdue: [], dueSoon: [], upcoming: [], completed: [] };
+
+    const now = Date.now();
+    const oneDayFromNow = now + 86400000;
+    const threeDaysFromNow = now + 259200000;
+
+    const categorized = {
+      overdue: [] as typeof assignmentsData.data,
+      dueSoon: [] as typeof assignmentsData.data,
+      upcoming: [] as typeof assignmentsData.data,
+      completed: [] as typeof assignmentsData.data,
+    };
+
+    assignmentsData.data.forEach((assignment) => {
+      if (assignment.status === 'GRADED') {
+        categorized.completed.push(assignment);
+      } else if (assignment.dueDate) {
+        const dueTime = new Date(assignment.dueDate).getTime();
+        if (dueTime < now) {
+          categorized.overdue.push(assignment);
+        } else if (dueTime < oneDayFromNow) {
+          categorized.dueSoon.push(assignment);
+        } else if (dueTime < threeDaysFromNow) {
+          categorized.upcoming.push(assignment);
+        } else {
+          categorized.upcoming.push(assignment);
+        }
+      } else {
+        categorized.upcoming.push(assignment);
+      }
+    });
+
+    return categorized;
+  }, [assignmentsData]);
+
+  // Calculate stats
+  const stats = {
+    total: assignmentsData?.meta.total || 0,
+    overdue: assignments.overdue.length,
+    dueSoon: assignments.dueSoon.length,
+    completed: assignments.completed.length,
+  };
+
+  const completionRate = stats.total > 0 
+    ? Math.round((stats.completed / stats.total) * 100)
+    : 0;
+
+  const formatDueDate = (dueDate: string | null) => {
+    if (!dueDate) return 'No due date';
+    const date = new Date(dueDate);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const isTomorrow = date.toDateString() === new Date(now.getTime() + 86400000).toDateString();
+
+    if (isToday) return `Today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    if (isTomorrow) return `Tomorrow at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
+  if (assignmentsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-student-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
-        <div className="flex items-center gap-3">
-          <FileText className="h-8 w-8 text-student-600" />
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">My Work</h1>
-            <p className="text-muted-foreground">
-              Track assignments, tests, and submitted work
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <ClipboardList className="h-8 w-8 text-student-600" />
+              My Work
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Track and manage your assignments and tasks
             </p>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
           <Button variant="student">
             <Plus className="h-4 w-4 mr-2" />
-            New Draft
+            New Task
           </Button>
         </div>
       </motion.div>
@@ -119,220 +135,258 @@ export default function StudentWorkPage() {
         transition={{ delay: 0.1 }}
         className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >
-        <Card>
+        <Card hover="lift">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold">4</p>
+                <p className="text-sm text-muted-foreground">Total Tasks</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
               </div>
-              <AlertCircle className="h-8 w-8 text-amber-500" />
+              <ClipboardList className="h-8 w-8 text-student-600" />
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card hover="lift">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Due Today</p>
-                <p className="text-2xl font-bold">1</p>
+                <p className="text-sm text-muted-foreground">Overdue</p>
+                <p className="text-2xl font-bold text-red-500">{stats.overdue}</p>
               </div>
-              <Clock className="h-8 w-8 text-red-500" />
+              <AlertCircle className="h-8 w-8 text-red-500" />
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card hover="lift">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Due Soon</p>
+                <p className="text-2xl font-bold text-amber-500">{stats.dueSoon}</p>
+              </div>
+              <Clock className="h-8 w-8 text-amber-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card hover="lift">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold">24</p>
+                <p className="text-2xl font-bold text-green-500">{stats.completed}</p>
               </div>
               <CheckCircle2 className="h-8 w-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Avg Score</p>
-                <p className="text-2xl font-bold">91%</p>
-              </div>
-              <div className="h-8 w-8 rounded-full bg-student-100 flex items-center justify-center text-student-600 font-bold">
-                A
-              </div>
+      </motion.div>
+
+      {/* Progress */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <Card variant="student">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">Overall Completion</h3>
+              <span className="text-2xl font-bold">{completionRate}%</span>
             </div>
+            <Progress value={completionRate} className="h-3" indicatorClassName="bg-student-500" />
+            <p className="text-sm text-muted-foreground mt-2">
+              {stats.completed} of {stats.total} assignments completed
+            </p>
           </CardContent>
         </Card>
       </motion.div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card>
-              <CardHeader>
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList>
-                    <TabsTrigger value="pending">Pending (4)</TabsTrigger>
-                    <TabsTrigger value="completed">Completed</TabsTrigger>
-                    <TabsTrigger value="drafts">Drafts</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </CardHeader>
-              <CardContent>
-                {activeTab === 'pending' && (
-                  <div className="space-y-4">
-                    {assignments.map((assignment) => (
-                      <div
-                        key={assignment.id}
-                        className="p-4 rounded-xl border hover:shadow-md transition-all"
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h4 className="font-semibold">{assignment.title}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {assignment.course} • {assignment.type}
-                            </p>
-                          </div>
-                          <Badge
-                            variant={
-                              assignment.status === 'in-progress'
-                                ? 'student'
-                                : 'secondary'
-                            }
-                          >
-                            {assignment.status === 'not-started' ? 'Not Started' : 'In Progress'}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-between text-sm mb-3">
-                          <span className="text-muted-foreground flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            Due: {assignment.due}
-                          </span>
-                          <span className="font-medium">{assignment.points} pts</span>
-                        </div>
-                        {assignment.progress > 0 && (
-                          <div className="mb-3">
-                            <div className="flex justify-between text-sm mb-1">
-                              <span className="text-muted-foreground">Progress</span>
-                              <span>{assignment.progress}%</span>
-                            </div>
-                            <Progress value={assignment.progress} className="h-2" indicatorClassName="bg-student-500" />
-                          </div>
-                        )}
-                        <div className="flex gap-2">
-                          <Button variant="student" size="sm" className="flex-1">
-                            <Edit className="h-4 w-4 mr-1" />
-                            {assignment.progress > 0 ? 'Continue' : 'Start'}
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+      {/* Filter */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="flex gap-2"
+      >
+        <Button
+          variant={filter === 'all' ? 'student' : 'outline'}
+          size="sm"
+          onClick={() => setFilter('all')}
+        >
+          All
+        </Button>
+        <Button
+          variant={filter === 'pending' ? 'student' : 'outline'}
+          size="sm"
+          onClick={() => setFilter('pending')}
+        >
+          Pending
+        </Button>
+        <Button
+          variant={filter === 'completed' ? 'student' : 'outline'}
+          size="sm"
+          onClick={() => setFilter('completed')}
+        >
+          Completed
+        </Button>
+      </motion.div>
 
-                {activeTab === 'completed' && (
-                  <div className="space-y-3">
-                    {completedWork.map((work, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-4 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer"
-                      >
-                        <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium">{work.title}</p>
-                          <p className="text-sm text-muted-foreground">{work.course} • {work.date}</p>
-                        </div>
-                        <div className="text-right">
-                          <Badge variant="student" className="text-lg font-bold">
-                            {work.grade}
-                          </Badge>
-                          <p className="text-sm text-muted-foreground">{work.score}%</p>
-                        </div>
-                      </div>
-                    ))}
+      {/* Overdue Assignments */}
+      {assignments.overdue.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Card className="border-red-200 dark:border-red-900">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="h-5 w-5" />
+                Overdue ({assignments.overdue.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {assignments.overdue.map((assignment) => (
+                <div
+                  key={assignment.id}
+                  className="flex items-center gap-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900"
+                >
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 rounded border-2 border-red-500 text-red-600"
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium">{assignment.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {assignment.course?.name || 'Course'}
+                    </p>
                   </div>
-                )}
-
-                {activeTab === 'drafts' && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No drafts saved</p>
-                    <Button variant="student" className="mt-4">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Draft
-                    </Button>
+                  <div className="text-right">
+                    <Badge variant="destructive" size="sm">
+                      {assignment.type}
+                    </Badge>
+                    <p className="text-xs text-red-600 mt-1">
+                      <Clock className="h-3 w-3 inline mr-1" />
+                      {formatDueDate(assignment.dueDate)}
+                    </p>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card variant="student">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Upcoming Tests
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {upcomingTests.map((test, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-background/50">
-                    <p className="font-semibold">{test.title}</p>
-                    <p className="text-sm text-muted-foreground">{test.course}</p>
-                    <p className="text-sm font-medium mt-1">{test.date}</p>
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {test.topics.map((topic, j) => (
-                        <Badge key={j} variant="secondary" size="sm">
-                          {topic}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Quick Upload</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-student-500 transition-colors cursor-pointer">
-                  <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Drag & drop files here or click to browse
-                  </p>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-      </div>
+              ))}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Due Soon */}
+      {assignments.dueSoon.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-amber-600" />
+                Due Soon ({assignments.dueSoon.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {assignments.dueSoon.map((assignment) => (
+                <div
+                  key={assignment.id}
+                  className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 rounded border-2 border-student-500 text-student-600"
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium">{assignment.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {assignment.course?.name || 'Course'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant="secondary" size="sm">
+                      {assignment.type}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      <Clock className="h-3 w-3 inline mr-1" />
+                      {formatDueDate(assignment.dueDate)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Upcoming */}
+      {assignments.upcoming.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-student-600" />
+                Upcoming ({assignments.upcoming.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {assignments.upcoming.map((assignment) => (
+                <div
+                  key={assignment.id}
+                  className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 rounded border-2 border-student-500 text-student-600"
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium">{assignment.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {assignment.course?.name || 'Course'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant="secondary" size="sm">
+                      {assignment.type}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      <Clock className="h-3 w-3 inline mr-1" />
+                      {formatDueDate(assignment.dueDate)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Empty State */}
+      {stats.total === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Card>
+            <CardContent className="py-12 text-center">
+              <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-green-500" />
+              <h3 className="font-semibold text-lg mb-2">All Caught Up!</h3>
+              <p className="text-muted-foreground">
+                You have no pending assignments. Great work!
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
     </div>
   );
 }

@@ -2,166 +2,144 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import {
   Users,
-  Plus,
-  MessageSquare,
-  Video,
-  Calendar,
-  FileText,
-  Star,
-  ChevronRight,
   UserPlus,
-  Settings,
+  MessageCircle,
+  Calendar,
+  Target,
+  TrendingUp,
+  Award,
+  Plus,
+  Loader2,
+  Crown,
 } from 'lucide-react';
+import { useTeams, useTeamMembers } from '@/lib/hooks/use-teams';
+import { useCurrentUser } from '@/lib/hooks/use-auth';
+import { useToast } from '@/components/ui/toast';
 
-const myTeams = [
-  {
-    id: 1,
-    name: 'Math Study Group',
-    members: 6,
-    course: 'Algebra II',
-    nextMeeting: 'Today, 4:00 PM',
-    unread: 3,
-    avatar: '📐',
-  },
-  {
-    id: 2,
-    name: 'Biology Lab Partners',
-    members: 4,
-    course: 'Biology',
-    nextMeeting: 'Tomorrow, 2:00 PM',
-    unread: 0,
-    avatar: '🔬',
-  },
-  {
-    id: 3,
-    name: 'History Project Team',
-    members: 5,
-    course: 'World History',
-    nextMeeting: 'Wednesday, 3:30 PM',
-    unread: 7,
-    avatar: '📚',
-  },
-  {
-    id: 4,
-    name: 'Debate Club',
-    members: 12,
-    course: 'Extracurricular',
-    nextMeeting: 'Friday, 3:00 PM',
-    unread: 2,
-    avatar: '🎤',
-  },
-];
+export default function StudentTeams() {
+  const { data: user } = useCurrentUser();
+  const { data: teamsData, isLoading } = useTeams({ limit: 50 });
+  const [selectedTeamId, setSelectedTeamId] = React.useState<string | null>(null);
+  
+  const { data: membersData } = useTeamMembers(selectedTeamId || '');
+  const toast = useToast();
 
-const teamMembers = [
-  { name: 'Sarah Johnson', role: 'Team Lead', status: 'online', avatar: undefined },
-  { name: 'Mike Chen', role: 'Member', status: 'online', avatar: undefined },
-  { name: 'Emily Davis', role: 'Member', status: 'offline', avatar: undefined },
-  { name: 'Alex Kim', role: 'Member', status: 'away', avatar: undefined },
-  { name: 'Jordan Smith', role: 'Member', status: 'online', avatar: undefined },
-];
+  const teams = teamsData?.data || [];
+  const selectedTeam = teams.find(t => t.id === selectedTeamId);
+  const members = membersData?.data || [];
 
-const recentActivity = [
-  { user: 'Sarah', action: 'shared a file', item: 'Chapter 5 Notes.pdf', time: '10 min ago' },
-  { user: 'Mike', action: 'sent a message', item: 'Meeting reminder', time: '1 hour ago' },
-  { user: 'Emily', action: 'completed', item: 'Problem Set 3', time: '2 hours ago' },
-  { user: 'Alex', action: 'scheduled', item: 'Study Session', time: 'Yesterday' },
-];
+  // Set first team as selected
+  React.useEffect(() => {
+    if (teams.length > 0 && !selectedTeamId) {
+      setSelectedTeamId(teams[0].id);
+    }
+  }, [teams, selectedTeamId]);
 
-const sharedFiles = [
-  { name: 'Chapter 5 Notes.pdf', size: '2.4 MB', uploader: 'Sarah', date: 'Today' },
-  { name: 'Practice Problems.docx', size: '156 KB', uploader: 'Mike', date: 'Yesterday' },
-  { name: 'Study Guide.pdf', size: '890 KB', uploader: 'You', date: '2 days ago' },
-];
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-student-600" />
+      </div>
+    );
+  }
 
-export default function StudentTeamsPage() {
   return (
     <div className="space-y-6">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
-        <div className="flex items-center gap-3">
-          <Users className="h-8 w-8 text-student-600" />
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Teams</h1>
-            <p className="text-muted-foreground">
-              Collaborate with classmates on projects and study groups
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Users className="h-8 w-8 text-student-600" />
+              My Teams
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Collaborate with classmates on group projects
             </p>
           </div>
+          <Button variant="student">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Team
+          </Button>
         </div>
-        <Button variant="student">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Team
-        </Button>
       </motion.div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Teams List */}
-        <div className="lg:col-span-2 space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle>My Teams</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {myTeams.map((team) => (
-                    <div
-                      key={team.id}
-                      className="p-4 rounded-xl border hover:shadow-md transition-all cursor-pointer"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-xl bg-student-100 dark:bg-student-900/30 flex items-center justify-center text-2xl">
-                            {team.avatar}
-                          </div>
-                          <div>
-                            <h4 className="font-semibold">{team.name}</h4>
-                            <p className="text-sm text-muted-foreground">{team.course}</p>
-                          </div>
-                        </div>
-                        {team.unread > 0 && (
-                          <Badge variant="student">{team.unread}</Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          {team.members} members
-                        </span>
-                        <span className="text-student-600">
-                          <Calendar className="h-4 w-4 inline mr-1" />
-                          {team.nextMeeting}
-                        </span>
-                      </div>
-                      <div className="flex gap-2 mt-3">
-                        <Button variant="student" size="sm" className="flex-1">
-                          <MessageSquare className="h-4 w-4 mr-1" />
-                          Chat
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Video className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+      {/* Stats */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-3 gap-4"
+      >
+        <Card hover="lift">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Active Teams</p>
+                <p className="text-2xl font-bold">{teams.length}</p>
+              </div>
+              <Users className="h-8 w-8 text-student-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card hover="lift">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Members</p>
+                <p className="text-2xl font-bold">
+                  {teams.reduce((sum, team) => sum + (team.members?.length || 0), 0)}
+                </p>
+              </div>
+              <UserPlus className="h-8 w-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card hover="lift">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Achievements</p>
+                <p className="text-2xl font-bold">12</p>
+              </div>
+              <Award className="h-8 w-8 text-amber-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-          {/* Team Activity */}
+      {teams.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="font-semibold text-lg mb-2">No Teams Yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Create or join a team to start collaborating with classmates
+              </p>
+              <Button variant="student">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Your First Team
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ) : (
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Teams List */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -169,138 +147,193 @@ export default function StudentTeamsPage() {
           >
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="h-5 w-5" />
-                  Recent Activity
-                </CardTitle>
-                <CardDescription>Math Study Group</CardDescription>
+                <CardTitle>My Teams</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {recentActivity.map((activity, i) => (
+              <CardContent className="space-y-2">
+                {teams.map((team) => (
                   <div
-                    key={i}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50"
+                    key={team.id}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                      selectedTeamId === team.id
+                        ? 'bg-student-50 dark:bg-student-900/20 border-student-500'
+                        : 'hover:bg-muted'
+                    }`}
+                    onClick={() => setSelectedTeamId(team.id)}
                   >
-                    <Avatar fallback={activity.user} size="sm" />
-                    <div className="flex-1">
-                      <p className="text-sm">
-                        <span className="font-medium">{activity.user}</span>
-                        {' '}{activity.action}{' '}
-                        <span className="text-student-600">{activity.item}</span>
-                      </p>
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-student-100 dark:bg-student-900/30 flex items-center justify-center flex-shrink-0">
+                        <Users className="h-5 w-5 text-student-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold truncate">{team.name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {team.members?.length || 0} members
+                        </p>
+                      </div>
                     </div>
-                    <span className="text-xs text-muted-foreground">{activity.time}</span>
                   </div>
                 ))}
               </CardContent>
             </Card>
           </motion.div>
-        </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Team Members */}
+          {/* Team Details */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
+            className="lg:col-span-2 space-y-6"
           >
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Members
-                  </CardTitle>
-                  <Button variant="ghost" size="iconSm">
-                    <UserPlus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <CardDescription>Math Study Group</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {teamMembers.map((member, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3"
-                  >
-                    <Avatar
-                      fallback={member.name}
-                      size="sm"
-                      status={member.status as 'online' | 'offline' | 'away'}
-                    />
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{member.name}</p>
-                      <p className="text-xs text-muted-foreground">{member.role}</p>
+            {selectedTeam && (
+              <>
+                {/* Team Header */}
+                <Card variant="student">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold">{selectedTeam.name}</h2>
+                        <p className="text-muted-foreground mt-1">
+                          {selectedTeam.description || 'No description'}
+                        </p>
+                        <div className="flex gap-2 mt-3">
+                          <Badge variant="student">
+                            {selectedTeam.members?.length || 0} Members
+                          </Badge>
+                          {selectedTeam.course && (
+                            <Badge variant="secondary">
+                              {selectedTeam.course.name}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Chat
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Schedule
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
+                  </CardContent>
+                </Card>
 
-          {/* Shared Files */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Shared Files
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {sharedFiles.map((file, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
-                  >
-                    <div className="h-8 w-8 rounded-lg bg-student-100 dark:bg-student-900/30 flex items-center justify-center">
-                      <FileText className="h-4 w-4 text-student-600" />
+                {/* Team Members */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Team Members</CardTitle>
+                      <Button variant="outline" size="sm">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Invite
+                      </Button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{file.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {file.uploader} • {file.date}
-                      </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {selectedTeam.members?.map((member) => (
+                        <div
+                          key={member.id}
+                          className="flex items-center gap-3 p-3 rounded-lg border hover:shadow-md transition-all"
+                        >
+                          <div className="h-12 w-12 rounded-full bg-student-100 dark:bg-student-900/30 flex items-center justify-center">
+                            {member.user.avatarUrl ? (
+                              <img
+                                src={member.user.avatarUrl}
+                                alt={member.user.firstName}
+                                className="h-full w-full rounded-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-lg font-semibold text-student-600">
+                                {member.user.firstName[0]}
+                                {member.user.lastName[0]}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold">
+                                {member.user.firstName} {member.user.lastName}
+                              </p>
+                              {member.role === 'LEADER' && (
+                                <Crown className="h-4 w-4 text-amber-500" />
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground capitalize">
+                              {member.role.toLowerCase()}
+                            </p>
+                          </div>
+                          <Button variant="ghost" size="sm">
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                ))}
-                <Button variant="outline" size="sm" className="w-full">
-                  View All Files
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
+                  </CardContent>
+                </Card>
 
-          {/* Quick Actions */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <Card variant="student">
-              <CardContent className="p-4 space-y-2">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Schedule Meeting
-                </Button>
-                <Button variant="ghost" className="w-full justify-start">
-                  <Video className="h-4 w-4 mr-2" />
-                  Start Video Call
-                </Button>
-                <Button variant="ghost" className="w-full justify-start">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Team Settings
-                </Button>
-              </CardContent>
-            </Card>
+                {/* Team Activity */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Activity</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {selectedTeam.members?.slice(0, 5).map((member, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 p-2 rounded-lg"
+                      >
+                        <div className="h-8 w-8 rounded-full bg-student-100 dark:bg-student-900/30 flex items-center justify-center text-sm font-semibold text-student-600">
+                          {member.user.firstName[0]}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm">
+                            <span className="font-medium">
+                              {member.user.firstName} {member.user.lastName}
+                            </span>
+                            {' '}joined the team
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(member.joinedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                {/* Team Performance */}
+                <Card variant="student">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Team Performance
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-3xl font-bold">A</p>
+                        <p className="text-sm text-muted-foreground">Avg. Grade</p>
+                      </div>
+                      <div>
+                        <p className="text-3xl font-bold">8</p>
+                        <p className="text-sm text-muted-foreground">Tasks Completed</p>
+                      </div>
+                      <div>
+                        <p className="text-3xl font-bold">92%</p>
+                        <p className="text-sm text-muted-foreground">On-Time Rate</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </motion.div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

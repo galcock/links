@@ -2,261 +2,333 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import {
-  Briefcase,
+  Folder,
+  File,
   FileText,
-  FolderOpen,
-  Download,
+  Image,
+  Video,
+  Music,
+  Archive,
   Upload,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  Star,
-  BookOpen,
-  Calendar,
-  ChevronRight,
+  Search,
+  Grid,
+  List,
+  MoreVertical,
+  Download,
+  Trash2,
+  Share2,
+  Loader2,
+  FolderOpen,
 } from 'lucide-react';
+import { useFolders, useFiles, useUploadFile, useDeleteFile } from '@/lib/hooks/use-files';
+import { useCurrentUser } from '@/lib/hooks/use-auth';
+import { useToast } from '@/components/ui/toast';
 
-const recentFiles = [
-  { name: 'Math_Homework_Ch5.pdf', type: 'PDF', size: '2.4 MB', date: '2 hours ago', status: 'submitted' },
-  { name: 'Biology_Lab_Report.docx', type: 'Word', size: '1.8 MB', date: 'Yesterday', status: 'draft' },
-  { name: 'History_Essay_Draft.pdf', type: 'PDF', size: '892 KB', date: '2 days ago', status: 'submitted' },
-  { name: 'English_Notes.pdf', type: 'PDF', size: '456 KB', date: '3 days ago', status: 'personal' },
-];
+export default function StudentMyOffice() {
+  const { data: user } = useCurrentUser();
+  const [currentFolderId, setCurrentFolderId] = React.useState<string | null>(null);
+  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = React.useState('');
 
-const assignments = [
-  { title: 'Quadratic Equations Practice', course: 'Algebra II', due: 'Today', status: 'pending', progress: 75 },
-  { title: 'Lab Report: Photosynthesis', course: 'Biology', due: 'Tomorrow', status: 'in-progress', progress: 40 },
-  { title: 'World War II Essay', course: 'History', due: 'Friday', status: 'not-started', progress: 0 },
-  { title: 'Shakespeare Analysis', course: 'English', due: 'Next Week', status: 'not-started', progress: 0 },
-];
+  const { data: foldersData, isLoading: foldersLoading } = useFolders({
+    parentId: currentFolderId || undefined,
+    limit: 100,
+  });
 
-const grades = [
-  { course: 'Algebra II', grade: 'A-', score: 91, trend: 'up' },
-  { course: 'Biology', grade: 'A', score: 94, trend: 'up' },
-  { course: 'History', grade: 'B+', score: 87, trend: 'same' },
-  { course: 'English', grade: 'A', score: 93, trend: 'up' },
-];
+  const { data: filesData, isLoading: filesLoading } = useFiles({
+    folderId: currentFolderId || undefined,
+    search: searchQuery || undefined,
+    limit: 100,
+  });
 
-export default function StudentOfficePage() {
+  const uploadMutation = useUploadFile();
+  const deleteMutation = useDeleteFile('');
+  const toast = useToast();
+
+  const isLoading = foldersLoading || filesLoading;
+
+  const folders = foldersData?.data || [];
+  const files = filesData?.data || [];
+
+  // Calculate storage stats
+  const totalSize = React.useMemo(() => {
+    return files.reduce((sum, file) => sum + (file.size || 0), 0);
+  }, [files]);
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.startsWith('image/')) return <Image className="h-5 w-5 text-blue-500" />;
+    if (mimeType.startsWith('video/')) return <Video className="h-5 w-5 text-purple-500" />;
+    if (mimeType.startsWith('audio/')) return <Music className="h-5 w-5 text-green-500" />;
+    if (mimeType.includes('pdf')) return <FileText className="h-5 w-5 text-red-500" />;
+    if (mimeType.includes('zip') || mimeType.includes('archive')) 
+      return <Archive className="h-5 w-5 text-amber-500" />;
+    return <File className="h-5 w-5 text-muted-foreground" />;
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (currentFolderId) formData.append('folderId', currentFolderId);
+
+      await uploadMutation.mutateAsync(formData as any);
+      toast.success('File Uploaded', `${file.name} has been uploaded successfully`);
+    } catch (error) {
+      toast.error('Upload Failed', 'Failed to upload file');
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string, fileName: string) => {
+    if (!confirm(`Delete ${fileName}?`)) return;
+
+    try {
+      await deleteMutation.mutateAsync(fileId);
+      toast.success('File Deleted', `${fileName} has been deleted`);
+    } catch (error) {
+      toast.error('Delete Failed', 'Failed to delete file');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-student-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
-        <div className="flex items-center gap-3">
-          <Briefcase className="h-8 w-8 text-student-600" />
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">My Office</h1>
-            <p className="text-muted-foreground">
-              Your personal workspace for files, assignments, and grades
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <FolderOpen className="h-8 w-8 text-student-600" />
+              My Office
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Organize and access your files and documents
             </p>
           </div>
+          <div className="flex gap-2">
+            <input
+              type="file"
+              id="file-upload"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+            <Button
+              variant="student"
+              onClick={() => document.getElementById('file-upload')?.click()}
+              disabled={uploadMutation.isPending}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {uploadMutation.isPending ? 'Uploading...' : 'Upload'}
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Storage Stats */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-3 gap-4"
+      >
+        <Card hover="lift">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Files</p>
+                <p className="text-2xl font-bold">{files.length}</p>
+              </div>
+              <File className="h-8 w-8 text-student-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card hover="lift">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Folders</p>
+                <p className="text-2xl font-bold">{folders.length}</p>
+              </div>
+              <Folder className="h-8 w-8 text-amber-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card hover="lift">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Storage Used</p>
+                <p className="text-2xl font-bold">{formatBytes(totalSize)}</p>
+              </div>
+              <Archive className="h-8 w-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Toolbar */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="flex items-center justify-between gap-4"
+      >
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search files and folders..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-student-500"
+          />
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Download All
+          <Button
+            variant={viewMode === 'grid' ? 'student' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+          >
+            <Grid className="h-4 w-4" />
           </Button>
-          <Button variant="student">
-            <Upload className="h-4 w-4 mr-2" />
-            Upload File
+          <Button
+            variant={viewMode === 'list' ? 'student' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+          >
+            <List className="h-4 w-4" />
           </Button>
         </div>
       </motion.div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Assignments */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-student-600" />
-                    Active Assignments
-                  </CardTitle>
-                  <Button variant="ghost" size="sm">
-                    View All <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {assignments.map((assignment, i) => (
+      {/* Files and Folders */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {currentFolderId ? 'Current Folder' : 'All Files'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {folders.length === 0 && files.length === 0 ? (
+              <div className="text-center py-12">
+                <FolderOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground mb-2">No files or folders yet</p>
+                <p className="text-sm text-muted-foreground">
+                  Upload files to get started
+                </p>
+              </div>
+            ) : (
+              <div className={viewMode === 'grid' 
+                ? 'grid md:grid-cols-3 lg:grid-cols-4 gap-4' 
+                : 'space-y-2'
+              }>
+                {/* Folders */}
+                {folders.map((folder) => (
                   <div
-                    key={i}
-                    className="p-4 rounded-xl border hover:shadow-md transition-all cursor-pointer"
+                    key={folder.id}
+                    className={viewMode === 'grid'
+                      ? 'p-4 rounded-lg border hover:shadow-md transition-all cursor-pointer'
+                      : 'flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors cursor-pointer'
+                    }
+                    onClick={() => setCurrentFolderId(folder.id)}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h4 className="font-semibold">{assignment.title}</h4>
-                        <p className="text-sm text-muted-foreground">{assignment.course}</p>
-                      </div>
-                      <Badge
-                        variant={
-                          assignment.status === 'pending'
-                            ? 'warning'
-                            : assignment.status === 'in-progress'
-                            ? 'student'
-                            : 'secondary'
-                        }
-                      >
-                        {assignment.status === 'not-started' ? 'Not Started' : assignment.status}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between text-sm mb-2">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        Due: {assignment.due}
-                      </span>
-                      <span className="font-medium">{assignment.progress}%</span>
-                    </div>
-                    <Progress value={assignment.progress} className="h-2" indicatorClassName="bg-student-500" />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Recent Files */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FolderOpen className="h-5 w-5 text-student-600" />
-                  Recent Files
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {recentFiles.map((file, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                    >
-                      <div className="h-10 w-10 rounded-lg bg-student-100 dark:bg-student-900/30 flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-student-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{file.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {file.type} • {file.size} • {file.date}
+                    <Folder className={viewMode === 'grid' 
+                      ? 'h-12 w-12 mx-auto mb-2 text-amber-500'
+                      : 'h-5 w-5 text-amber-500'
+                    } />
+                    <div className={viewMode === 'grid' ? 'text-center' : 'flex-1'}>
+                      <p className={viewMode === 'grid' ? 'font-medium' : 'font-medium text-sm'}>
+                        {folder.name}
+                      </p>
+                      {folder.description && (
+                        <p className="text-xs text-muted-foreground">
+                          {folder.description}
                         </p>
-                      </div>
-                      <Badge
-                        variant={
-                          file.status === 'submitted'
-                            ? 'success'
-                            : file.status === 'draft'
-                            ? 'warning'
-                            : 'secondary'
-                        }
-                        size="sm"
-                      >
-                        {file.status}
-                      </Badge>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Quick Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card variant="student">
-              <CardContent className="p-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <p className="text-3xl font-bold">4</p>
-                    <p className="text-sm text-muted-foreground">Pending</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-3xl font-bold">12</p>
-                    <p className="text-sm text-muted-foreground">Submitted</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-3xl font-bold">91%</p>
-                    <p className="text-sm text-muted-foreground">Avg Grade</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-3xl font-bold">28</p>
-                    <p className="text-sm text-muted-foreground">Files</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Current Grades */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="h-5 w-5 text-amber-500" />
-                  Current Grades
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {grades.map((course, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
-                    <div>
-                      <p className="font-medium text-sm">{course.course}</p>
-                      <p className="text-xs text-muted-foreground">{course.score}%</p>
-                    </div>
-                    <Badge variant="student" className="text-lg font-bold">
-                      {course.grade}
-                    </Badge>
                   </div>
                 ))}
-              </CardContent>
-            </Card>
-          </motion.div>
 
-          {/* Storage */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Storage Used</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Progress value={35} className="h-2 mb-2" indicatorClassName="bg-student-500" />
-                <p className="text-sm text-muted-foreground">3.5 GB of 10 GB used</p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-      </div>
+                {/* Files */}
+                {files.map((file) => (
+                  <div
+                    key={file.id}
+                    className={viewMode === 'grid'
+                      ? 'p-4 rounded-lg border hover:shadow-md transition-all group'
+                      : 'flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors group'
+                    }
+                  >
+                    <div className={viewMode === 'grid' 
+                      ? 'flex justify-center mb-2'
+                      : ''
+                    }>
+                      {getFileIcon(file.mimeType || '')}
+                    </div>
+                    <div className={viewMode === 'grid' ? 'text-center flex-1' : 'flex-1'}>
+                      <p className={viewMode === 'grid' 
+                        ? 'font-medium text-sm truncate' 
+                        : 'font-medium text-sm'
+                      }>
+                        {file.filename}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatBytes(file.size || 0)}
+                      </p>
+                    </div>
+                    <div className={viewMode === 'grid'
+                      ? 'flex justify-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity'
+                      : 'flex gap-1'
+                    }>
+                      <Button variant="ghost" size="sm">
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteFile(file.id, file.filename)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }

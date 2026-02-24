@@ -19,92 +19,115 @@ import {
   FileText,
   Headphones,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react';
+import { useCourses } from '@/lib/hooks/use-courses';
+import { useAssignments } from '@/lib/hooks/use-assignments';
+import { useWorkspaces } from '@/lib/hooks/use-workspaces';
+import { useCurrentUser } from '@/lib/hooks/use-auth';
+import { useGrades } from '@/lib/hooks/use-grades';
 
-const courses = [
-  {
-    id: 1,
-    name: 'Algebra II',
-    teacher: 'Mrs. Johnson',
-    progress: 72,
-    currentUnit: 'Quadratic Equations',
-    nextLesson: 'Solving by Factoring',
-    color: 'purple',
-    lessons: 24,
-    completed: 17,
-  },
-  {
-    id: 2,
-    name: 'Biology',
-    teacher: 'Mr. Smith',
-    progress: 85,
-    currentUnit: 'Cell Biology',
-    nextLesson: 'Mitosis and Meiosis',
-    color: 'green',
-    lessons: 30,
-    completed: 25,
-  },
-  {
-    id: 3,
-    name: 'World History',
-    teacher: 'Ms. Davis',
-    progress: 68,
-    currentUnit: 'World War II',
-    nextLesson: 'The Pacific Theater',
-    color: 'amber',
-    lessons: 28,
-    completed: 19,
-  },
-  {
-    id: 4,
-    name: 'English Literature',
-    teacher: 'Mr. Brown',
-    progress: 90,
-    currentUnit: 'Shakespeare',
-    nextLesson: 'Hamlet Act III Analysis',
-    color: 'blue',
-    lessons: 20,
-    completed: 18,
-  },
-];
+export default function StudentLearningSpaces() {
+  const { data: user } = useCurrentUser();
+  const { data: coursesData, isLoading: coursesLoading } = useCourses({ 
+    status: 'ACTIVE',
+    limit: 50,
+  });
+  const { data: assignmentsData } = useAssignments({ 
+    status: 'ACTIVE',
+    limit: 100,
+  });
+  const { data: workspacesData } = useWorkspaces({ limit: 20 });
+  const { data: gradesData } = useGrades({ 
+    studentId: user?.id,
+    limit: 100,
+  });
 
-const recentLessons = [
-  { title: 'The Quadratic Formula', course: 'Algebra II', duration: '25 min', type: 'video', completed: true },
-  { title: 'Cell Membrane Structure', course: 'Biology', duration: '30 min', type: 'video', completed: true },
-  { title: 'D-Day: Operation Overlord', course: 'History', duration: '45 min', type: 'reading', completed: false },
-  { title: 'Romeo & Juliet: Act II', course: 'English', duration: '20 min', type: 'audio', completed: true },
-];
+  // Calculate course progress and grades
+  const coursesWithProgress = React.useMemo(() => {
+    if (!coursesData?.data) return [];
+    
+    return coursesData.data.map((course) => {
+      // Calculate completion from assignments
+      const courseAssignments = assignmentsData?.data?.filter(
+        a => a.courseId === course.id
+      ) || [];
+      const totalLessons = courseAssignments.length || 24;
+      const completed = courseAssignments.filter(a => a.status === 'GRADED').length;
+      const progress = totalLessons > 0 ? Math.round((completed / totalLessons) * 100) : 0;
+      
+      // Get grade for this course
+      const courseGrades = gradesData?.data?.filter(g => g.assignment?.courseId === course.id) || [];
+      const averageGrade = courseGrades.length > 0
+        ? courseGrades.reduce((sum, g) => sum + (g.percentage || 0), 0) / courseGrades.length
+        : 0;
+      
+      const gradeLabel = averageGrade >= 93 ? 'A' :
+                        averageGrade >= 90 ? 'A-' :
+                        averageGrade >= 87 ? 'B+' :
+                        averageGrade >= 83 ? 'B' :
+                        averageGrade >= 80 ? 'B-' :
+                        averageGrade >= 77 ? 'C+' :
+                        averageGrade >= 73 ? 'C' : 'C-';
+      
+      return {
+        ...course,
+        progress,
+        completed,
+        totalLessons,
+        gradeLabel,
+        gradePercent: Math.round(averageGrade),
+      };
+    });
+  }, [coursesData, assignmentsData, gradesData]);
 
-const learningPaths = [
-  { name: 'SAT Math Prep', progress: 45, modules: 12, enrolled: true },
-  { name: 'AP Biology', progress: 30, modules: 18, enrolled: true },
-  { name: 'College Essay Writing', progress: 0, modules: 8, enrolled: false },
-];
+  // Group courses by progress level
+  const inProgressCourses = coursesWithProgress.filter(c => c.progress > 0 && c.progress < 100);
+  const notStartedCourses = coursesWithProgress.filter(c => c.progress === 0);
 
-export default function StudentLearningPage() {
+  // Recent learning activities
+  const recentActivities = React.useMemo(() => {
+    if (!assignmentsData?.data) return [];
+    
+    return assignmentsData.data
+      .filter(a => a.status === 'GRADED')
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 5);
+  }, [assignmentsData]);
+
+  if (coursesLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-student-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
-        <div className="flex items-center gap-3">
-          <BookOpen className="h-8 w-8 text-student-600" />
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Learning</h1>
-            <p className="text-muted-foreground">
-              Continue your learning journey across all courses
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <BookOpen className="h-8 w-8 text-student-600" />
+              Learning Spaces
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Your personalized learning environment
             </p>
           </div>
+          <Button variant="student">
+            <Play className="h-4 w-4 mr-2" />
+            Continue Learning
+          </Button>
         </div>
-        <Button variant="student">
-          <Play className="h-4 w-4 mr-2" />
-          Continue Learning
-        </Button>
       </motion.div>
 
-      {/* Learning Stats */}
+      {/* Stats */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -113,166 +136,217 @@ export default function StudentLearningPage() {
       >
         <Card variant="student" hover="lift">
           <CardContent className="p-4 text-center">
-            <Zap className="h-8 w-8 text-amber-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">7</p>
-            <p className="text-sm text-muted-foreground">Day Streak</p>
+            <BookOpen className="h-8 w-8 mx-auto mb-2 text-student-600" />
+            <p className="text-2xl font-bold">{coursesWithProgress.length}</p>
+            <p className="text-sm text-muted-foreground">Active Courses</p>
           </CardContent>
         </Card>
         <Card hover="lift">
           <CardContent className="p-4 text-center">
-            <Clock className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">12.5h</p>
-            <p className="text-sm text-muted-foreground">This Week</p>
+            <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500" />
+            <p className="text-2xl font-bold">
+              {coursesWithProgress.reduce((sum, c) => sum + c.completed, 0)}
+            </p>
+            <p className="text-sm text-muted-foreground">Lessons Completed</p>
           </CardContent>
         </Card>
         <Card hover="lift">
           <CardContent className="p-4 text-center">
-            <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">79</p>
-            <p className="text-sm text-muted-foreground">Lessons Done</p>
-          </CardContent>
-        </Card>
-        <Card hover="lift">
-          <CardContent className="p-4 text-center">
-            <Trophy className="h-8 w-8 text-purple-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold">15</p>
+            <Trophy className="h-8 w-8 mx-auto mb-2 text-amber-500" />
+            <p className="text-2xl font-bold">{recentActivities.length}</p>
             <p className="text-sm text-muted-foreground">Achievements</p>
+          </CardContent>
+        </Card>
+        <Card hover="lift">
+          <CardContent className="p-4 text-center">
+            <Star className="h-8 w-8 mx-auto mb-2 text-purple-500" />
+            <p className="text-2xl font-bold">
+              {coursesWithProgress.length > 0
+                ? Math.round(
+                    coursesWithProgress.reduce((sum, c) => sum + c.gradePercent, 0) /
+                      coursesWithProgress.length
+                  )
+                : 0}%
+            </p>
+            <p className="text-sm text-muted-foreground">Avg. Grade</p>
           </CardContent>
         </Card>
       </motion.div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Courses */}
-        <div className="lg:col-span-2 space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>My Courses</CardTitle>
-                  <Button variant="ghost" size="sm">
-                    View All <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {courses.map((course) => (
-                  <div
-                    key={course.id}
-                    className="p-4 rounded-xl border hover:shadow-md transition-all cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h4 className="font-semibold">{course.name}</h4>
-                        <p className="text-sm text-muted-foreground">{course.teacher}</p>
+      {/* Continue Learning */}
+      {inProgressCourses.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Continue Learning</CardTitle>
+                <Button variant="ghost" size="sm">
+                  View All
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                {inProgressCourses.slice(0, 4).map((course) => {
+                  const colorMap: Record<string, string> = {
+                    purple: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600',
+                    green: 'bg-green-100 dark:bg-green-900/30 text-green-600',
+                    blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600',
+                    amber: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600',
+                  };
+                  const randomColor = ['purple', 'green', 'blue', 'amber'][
+                    Math.floor(Math.random() * 4)
+                  ];
+                  
+                  return (
+                    <div
+                      key={course.id}
+                      className="p-4 rounded-xl border hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-semibold group-hover:text-student-600 transition-colors">
+                            {course.name}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {course.instructor?.user
+                              ? `${course.instructor.user.firstName} ${course.instructor.user.lastName}`
+                              : 'Instructor'}
+                          </p>
+                        </div>
+                        <Badge variant="student" className="text-base font-bold">
+                          {course.gradeLabel}
+                        </Badge>
                       </div>
-                      <Badge variant="student">{course.progress}%</Badge>
-                    </div>
-                    <div className="mb-3">
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">Current: </span>
-                        {course.currentUnit}
-                      </p>
-                      <p className="text-sm text-student-600">
-                        Next: {course.nextLesson}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-muted-foreground">
-                        {course.completed}/{course.lessons} lessons
-                      </span>
-                      <Button variant="student" size="sm">
-                        <Play className="h-3 w-3 mr-1" />
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Progress</span>
+                          <span className="font-medium">{course.progress}%</span>
+                        </div>
+                        <Progress
+                          value={course.progress}
+                          className="h-2"
+                          indicatorClassName="bg-student-500"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {course.completed} of {course.totalLessons} lessons completed
+                        </p>
+                      </div>
+                      <Button variant="student" size="sm" className="w-full mt-3">
+                        <Play className="h-3 w-3 mr-2" />
                         Continue
                       </Button>
                     </div>
-                    <Progress value={course.progress} className="h-2" indicatorClassName="bg-student-500" />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Recent Lessons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Recent Lessons
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {recentLessons.map((lesson, i) => (
+      {/* All Courses */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>All My Courses</CardTitle>
+            <CardDescription>
+              Explore all your enrolled courses and learning materials
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {coursesWithProgress.length === 0 ? (
+              <div className="text-center py-12">
+                <BookOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">No courses enrolled yet</p>
+                <Button variant="student" className="mt-4">
+                  Browse Courses
+                </Button>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-3 gap-4">
+                {coursesWithProgress.map((course) => (
                   <div
-                    key={i}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer"
+                    key={course.id}
+                    className="p-4 rounded-xl border hover:shadow-lg transition-all cursor-pointer group"
                   >
-                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
-                      lesson.completed ? 'bg-green-100 text-green-600' : 'bg-student-100 text-student-600'
-                    }`}>
-                      {lesson.type === 'video' && <Video className="h-4 w-4" />}
-                      {lesson.type === 'reading' && <FileText className="h-4 w-4" />}
-                      {lesson.type === 'audio' && <Headphones className="h-4 w-4" />}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h4 className="font-semibold mb-1 group-hover:text-student-600 transition-colors">
+                          {course.name}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          {course.code || 'Course Code'}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{lesson.title}</p>
-                      <p className="text-xs text-muted-foreground">{lesson.course} • {lesson.duration}</p>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Grade</span>
+                        <Badge variant="student">{course.gradeLabel}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Progress</span>
+                        <span className="text-sm font-medium">{course.progress}%</span>
+                      </div>
+                      <Progress
+                        value={course.progress}
+                        className="h-1.5"
+                        indicatorClassName="bg-student-500"
+                      />
                     </div>
-                    {lesson.completed && <CheckCircle2 className="h-4 w-4 text-green-500" />}
                   </div>
                 ))}
-              </CardContent>
-            </Card>
-          </motion.div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
 
-          {/* Learning Paths */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Learning Paths
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {learningPaths.map((path, i) => (
-                  <div key={i} className="p-3 rounded-lg border">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-medium text-sm">{path.name}</p>
-                      {path.enrolled ? (
-                        <Badge variant="student" size="sm">Enrolled</Badge>
-                      ) : (
-                        <Button variant="outline" size="sm">Enroll</Button>
-                      )}
-                    </div>
-                    {path.enrolled && (
-                      <>
-                        <Progress value={path.progress} className="h-1.5 mb-1" indicatorClassName="bg-student-500" />
-                        <p className="text-xs text-muted-foreground">{path.progress}% • {path.modules} modules</p>
-                      </>
-                    )}
+      {/* Recent Activity */}
+      {recentActivities.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {recentActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center gap-4 p-3 rounded-lg bg-muted/50"
+                >
+                  <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">{activity.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {activity.course?.name || 'Course'}
+                    </p>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-      </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(activity.updatedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
     </div>
   );
 }

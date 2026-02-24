@@ -1,36 +1,80 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Messaging } from '@/components/features/messaging';
-import { MessageSquare } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { useCurrentUser } from '@/lib/hooks/use-auth';
+import { useConversations, useMessages, useSendMessage } from '@/lib/hooks/use-messages';
+import { useToast } from '@/components/ui/toast';
 
-const mockConversations = [
-  { id: '1', name: 'Mrs. Johnson (Math)', lastMessage: 'Alex is doing great in class!', lastMessageTime: new Date(Date.now() - 1800000), unreadCount: 1, isOnline: true },
-  { id: '2', name: 'Mr. Smith (Biology)', lastMessage: 'Lab report feedback attached', lastMessageTime: new Date(Date.now() - 3600000), unreadCount: 0, isOnline: false },
-  { id: '3', name: 'School Administration', lastMessage: 'Reminder: Picture day tomorrow', lastMessageTime: new Date(Date.now() - 86400000), unreadCount: 2, isGroup: true },
-  { id: '4', name: 'Coach Martinez', lastMessage: 'Soccer schedule update', lastMessageTime: new Date(Date.now() - 172800000), unreadCount: 0, isOnline: true },
-  { id: '5', name: 'PTA Group', lastMessage: 'Next meeting: March 5th', lastMessageTime: new Date(Date.now() - 259200000), unreadCount: 5, isGroup: true, participants: 45 },
-];
+export default function ParentMessages() {
+  const { data: user } = useCurrentUser();
+  const { data: conversationsData, isLoading } = useConversations({ limit: 50 });
+  const [activeConversationId, setActiveConversationId] = React.useState<string | null>(null);
+  const { data: messagesData } = useMessages({ conversationId: activeConversationId || '' });
+  const sendMessageMutation = useSendMessage();
+  const toast = useToast();
 
-const mockMessages = [
-  { id: '1', content: 'Hi Mrs. Johnson, I wanted to check on Alex\'s progress in math.', senderId: 'parent', senderName: 'Me', createdAt: new Date(Date.now() - 7200000), isOwn: true, status: 'read' as const },
-  { id: '2', content: 'Hi! Alex is doing wonderfully. Their test scores have improved significantly.', senderId: 'teacher', senderName: 'Mrs. Johnson', createdAt: new Date(Date.now() - 7000000), isOwn: false },
-  { id: '3', content: 'That\'s great to hear! Is there anything we can do at home to support their learning?', senderId: 'parent', senderName: 'Me', createdAt: new Date(Date.now() - 6800000), isOwn: true, status: 'read' as const },
-  { id: '4', content: 'Alex is doing great in class! Keep encouraging them to practice the problem sets. Let me know if you\'d like to schedule a conference.', senderId: 'teacher', senderName: 'Mrs. Johnson', createdAt: new Date(Date.now() - 1800000), isOwn: false },
-];
+  React.useEffect(() => {
+    if (conversationsData?.data && conversationsData.data.length > 0 && !activeConversationId) {
+      setActiveConversationId(conversationsData.data[0].id);
+    }
+  }, [conversationsData, activeConversationId]);
 
-export default function ParentMessagesPage() {
+  const conversations = React.useMemo(() => {
+    if (!conversationsData?.data) return [];
+    return conversationsData.data.map((conv) => ({
+      id: conv.id,
+      name: conv.name || conv.participants.map(p => `${p.user.firstName} ${p.user.lastName}`).join(', ') || 'Unknown',
+      lastMessage: conv.messages?.[0]?.content || 'No messages',
+      lastMessageTime: conv.lastMessageAt ? new Date(conv.lastMessageAt) : undefined,
+      unreadCount: 0,
+      isOnline: false,
+      isGroup: conv.type === 'GROUP',
+      participants: conv.participants.length,
+    }));
+  }, [conversationsData]);
+
+  const messages = React.useMemo(() => {
+    if (!messagesData?.data || !user) return [];
+    return messagesData.data.map((msg) => ({
+      id: msg.id,
+      content: msg.content,
+      senderId: msg.senderId,
+      senderName: `${msg.sender.firstName} ${msg.sender.lastName}`,
+      createdAt: new Date(msg.createdAt),
+      isOwn: msg.senderId === user.id,
+      status: msg.isRead ? 'read' as const : 'delivered' as const,
+    }));
+  }, [messagesData, user]);
+
+  const handleSendMessage = async (content: string, conversationId: string) => {
+    try {
+      await sendMessageMutation.mutateAsync({ conversationId, content, type: 'TEXT' });
+    } catch (error) {
+      toast.error('Failed to send message', 'Please try again');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-parent-600" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
-        <MessageSquare className="h-8 w-8 text-parent-600" />
-        <div><h1 className="text-3xl font-bold">Messages</h1><p className="text-muted-foreground">Communicate with teachers and school staff</p></div>
-      </motion.div>
-
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <Messaging currentUserId="parent" conversations={mockConversations} messages={mockMessages} accentColor="parent" />
-      </motion.div>
+    <div className="h-[calc(100vh-12rem)]">
+      <Messaging
+        conversations={conversations}
+        messages={messages}
+        currentUserId={user?.id || ''}
+        activeConversationId={activeConversationId}
+        onConversationSelect={setActiveConversationId}
+        onSendMessage={handleSendMessage}
+        accentColor="parent"
+      />
     </div>
   );
 }

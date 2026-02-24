@@ -3,37 +3,91 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Messaging } from '@/components/features/messaging';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Loader2 } from 'lucide-react';
+import { useCurrentUser } from '@/lib/hooks/use-auth';
+import { useConversations, useMessages, useSendMessage } from '@/lib/hooks/use-messages';
+import { useToast } from '@/components/ui/toast';
 
-const mockConversations = [
-  { id: '1', name: 'Alex Smith (Student)', lastMessage: 'Thank you for the extra help!', lastMessageTime: new Date(Date.now() - 1800000), unreadCount: 0, isOnline: true },
-  { id: '2', name: 'Sarah Johnson (Parent)', lastMessage: 'Can we schedule a conference?', lastMessageTime: new Date(Date.now() - 3600000), unreadCount: 1, isOnline: false },
-  { id: '3', name: 'Math Department', lastMessage: 'Meeting moved to 3pm', lastMessageTime: new Date(Date.now() - 7200000), unreadCount: 5, isGroup: true, participants: 12 },
-  { id: '4', name: 'Dr. Williams (Principal)', lastMessage: 'Great work on the curriculum!', lastMessageTime: new Date(Date.now() - 86400000), unreadCount: 0, isOnline: true },
-  { id: '5', name: 'Period 1 - Algebra II', lastMessage: 'Homework reminder posted', lastMessageTime: new Date(Date.now() - 172800000), unreadCount: 0, isGroup: true, participants: 28 },
-];
+export default function InstructorMessages() {
+  const { data: user } = useCurrentUser();
+  const { data: conversationsData, isLoading } = useConversations({ limit: 50 });
+  const [activeConversationId, setActiveConversationId] = React.useState<string | null>(null);
+  
+  const { data: messagesData } = useMessages({
+    conversationId: activeConversationId || '',
+  });
+  
+  const sendMessageMutation = useSendMessage();
+  const toast = useToast();
 
-const mockMessages = [
-  { id: '1', content: 'Hi Mrs. Johnson, I wanted to discuss your child\'s progress in class.', senderId: 'teacher', senderName: 'Me', createdAt: new Date(Date.now() - 7200000), isOwn: true, status: 'read' as const },
-  { id: '2', content: 'Of course! How is Alex doing?', senderId: 'parent', senderName: 'Sarah Johnson', createdAt: new Date(Date.now() - 7000000), isOwn: false },
-  { id: '3', content: 'Alex has been doing great! Improved significantly on the last test.', senderId: 'teacher', senderName: 'Me', createdAt: new Date(Date.now() - 6800000), isOwn: true, status: 'read' as const },
-  { id: '4', content: 'That\'s wonderful news! Can we schedule a conference to discuss further?', senderId: 'parent', senderName: 'Sarah Johnson', createdAt: new Date(Date.now() - 3600000), isOwn: false },
-];
+  React.useEffect(() => {
+    if (conversationsData?.data && conversationsData.data.length > 0 && !activeConversationId) {
+      setActiveConversationId(conversationsData.data[0].id);
+    }
+  }, [conversationsData, activeConversationId]);
 
-export default function InstructorMessagesPage() {
+  const conversations = React.useMemo(() => {
+    if (!conversationsData?.data) return [];
+    return conversationsData.data.map((conv) => ({
+      id: conv.id,
+      name: conv.name || conv.participants.map(p => 
+        `${p.user.firstName} ${p.user.lastName}`
+      ).join(', ') || 'Unknown',
+      avatar: conv.type === 'DIRECT' && conv.participants[0]?.user.avatarUrl || undefined,
+      lastMessage: conv.messages?.[0]?.content || 'No messages yet',
+      lastMessageTime: conv.lastMessageAt ? new Date(conv.lastMessageAt) : undefined,
+      unreadCount: 0,
+      isOnline: false,
+      isGroup: conv.type === 'GROUP',
+      participants: conv.participants.length,
+    }));
+  }, [conversationsData]);
+
+  const messages = React.useMemo(() => {
+    if (!messagesData?.data || !user) return [];
+    return messagesData.data.map((msg) => ({
+      id: msg.id,
+      content: msg.content,
+      senderId: msg.senderId,
+      senderName: `${msg.sender.firstName} ${msg.sender.lastName}`,
+      senderAvatar: msg.sender.avatarUrl || undefined,
+      createdAt: new Date(msg.createdAt),
+      isOwn: msg.senderId === user.id,
+      status: msg.isRead ? 'read' as const : 'delivered' as const,
+    }));
+  }, [messagesData, user]);
+
+  const handleSendMessage = async (content: string, conversationId: string) => {
+    try {
+      await sendMessageMutation.mutateAsync({
+        conversationId,
+        content,
+        type: 'TEXT',
+      });
+    } catch (error) {
+      toast.error('Failed to send message', 'Please try again');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-instructor-600" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
-        <MessageSquare className="h-8 w-8 text-instructor-600" />
-        <div>
-          <h1 className="text-3xl font-bold">Messages</h1>
-          <p className="text-muted-foreground">Communicate with students, parents, and colleagues</p>
-        </div>
-      </motion.div>
-
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <Messaging currentUserId="teacher" conversations={mockConversations} messages={mockMessages} accentColor="instructor" />
-      </motion.div>
+    <div className="h-[calc(100vh-12rem)]">
+      <Messaging
+        conversations={conversations}
+        messages={messages}
+        currentUserId={user?.id || ''}
+        activeConversationId={activeConversationId}
+        onConversationSelect={setActiveConversationId}
+        onSendMessage={handleSendMessage}
+        accentColor="instructor"
+      />
     </div>
   );
 }
