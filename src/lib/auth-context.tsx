@@ -2,27 +2,29 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  StoredUser,
-  getCurrentUser,
-  setCurrentUser,
-  createUser,
-  findUserByEmail,
-  updateUser,
-  storePassword,
-  verifyPassword,
-  initializeDemoData,
-  logout as logoutStorage,
-} from './storage';
+
+interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  avatarUrl: string | null;
+  organization: {
+    id: string;
+    name: string;
+    type: string;
+  };
+}
 
 interface AuthContextType {
-  user: StoredUser | null;
+  user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (data: RegisterData) => Promise<{ success: boolean; error?: string; user?: StoredUser }>;
+  register: (data: RegisterData) => Promise<{ success: boolean; error?: string; user?: User }>;
   logout: () => void;
-  updateProfile: (updates: Partial<StoredUser>) => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (updates: Partial<User>) => Promise<{ success: boolean; error?: string }>;
 }
 
 interface RegisterData {
@@ -37,93 +39,113 @@ interface RegisterData {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<StoredUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Initialize on mount
+  // Check for existing session on mount
   useEffect(() => {
-    initializeDemoData();
-    const currentUser = getCurrentUser();
-    setUser(currentUser);
-    setIsLoading(false);
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/me', {
+          credentials: 'include',
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.data) {
+            setUser(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      const existingUser = findUserByEmail(email);
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      });
       
-      if (!existingUser) {
-        return { success: false, error: 'No account found with this email' };
+      const data = await res.json();
+      
+      if (data.success && data.data?.user) {
+        setUser(data.data.user);
+        return { success: true };
       }
       
-      // Verify password
-      const isValid = verifyPassword(existingUser.id, password);
-      
-      // For demo accounts, accept "Demo1234"
-      const isDemoAccount = email.toLowerCase().endsWith('@demo.com') && password === 'Demo1234';
-      
-      if (!isValid && !isDemoAccount) {
-        return { success: false, error: 'Incorrect password' };
-      }
-      
-      setCurrentUser(existingUser);
-      setUser(existingUser);
-      
-      return { success: true };
+      return { success: false, error: data.error || 'Login failed' };
     } catch (error) {
+      console.error('Login error:', error);
       return { success: false, error: 'An error occurred during login' };
     }
   }, []);
 
   const register = useCallback(async (data: RegisterData) => {
     try {
-      // Check if email exists
-      const existing = findUserByEmail(data.email);
-      if (existing) {
-        return { success: false, error: 'An account with this email already exists' };
-      }
-      
-      // Create user
-      const newUser = createUser({
-        email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        role: data.role,
-        organization: data.organization,
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
       });
       
-      // Store password
-      storePassword(newUser.id, data.password);
+      const result = await res.json();
       
-      // Auto-login
-      setCurrentUser(newUser);
-      setUser(newUser);
+      if (result.success && result.data?.user) {
+        setUser(result.data.user);
+        return { success: true, user: result.data.user };
+      }
       
-      return { success: true, user: newUser };
+      return { success: false, error: result.error || 'Registration failed' };
     } catch (error: any) {
       return { success: false, error: error.message || 'Registration failed' };
     }
   }, []);
 
-  const logout = useCallback(() => {
-    logoutStorage();
+  const logout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
     setUser(null);
     router.push('/login');
   }, [router]);
 
-  const updateProfile = useCallback(async (updates: Partial<StoredUser>) => {
+  const updateProfile = useCallback(async (updates: Partial<User>) => {
     if (!user) {
       return { success: false, error: 'Not logged in' };
     }
     
     try {
-      const updated = updateUser(user.id, updates);
-      if (updated) {
-        setUser(updated);
+      const res = await fetch('/api/auth/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updates),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success && data.data) {
+        setUser(data.data);
         return { success: true };
       }
-      return { success: false, error: 'Update failed' };
+      
+      return { success: false, error: data.error || 'Update failed' };
     } catch (error) {
       return { success: false, error: 'An error occurred' };
     }
