@@ -33,8 +33,16 @@ interface RegisterData {
 export function useCurrentUser() {
   return useQuery({
     queryKey: ['auth', 'me'],
-    queryFn: () => api.get<User>('/auth/me'),
+    queryFn: async () => {
+      try {
+        return await api.get<User>('/auth/me');
+      } catch (error) {
+        // Return null for auth errors instead of throwing
+        return null;
+      }
+    },
     retry: false,
+    throwOnError: false,
   });
 }
 
